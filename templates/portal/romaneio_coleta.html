@@ -1,0 +1,183 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Romaneio de Coleta - {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 20px; color: #333; font-size: 10pt; }
+        h1, h2, h3, h4 { font-weight: normal; margin: 0; }
+        .romaneio-header { text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 15px; margin-bottom: 20px; }
+        .romaneio-header img { max-height: 60px; margin-bottom: 10px; }
+        
+        .fornecedor-card {
+            border: 1px solid #aaa;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+            overflow: hidden; /* Garante que o conteúdo respeite a borda arredondada */
+        }
+        
+        .fornecedor-header {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-bottom: 1px solid #aaa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .fornecedor-header h2 { font-size: 1.5em; font-weight: bold; }
+        .fornecedor-header span { font-size: 1.1em; }
+        
+        .fornecedor-body { padding: 15px; }
+        .info-pessoais p { margin: 5px 0; }
+        
+        .coleta-bloco {
+            border-top: 1px dashed #ccc;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        .coleta-bloco:first-child {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0;
+        }
+        
+        .coleta-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .coleta-info p { margin: 0; }
+        
+        .item-tabela { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .item-tabela th, .item-tabela td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .item-tabela th { background-color: #f2f2f2; font-size: 9pt; }
+        .item-tabela td.numero { text-align: right; }
+
+        .fornecedor-footer {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #aaa;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .signature-box {
+            border-top: 1px solid #333;
+            margin-top: 30px;
+            padding-top: 5px;
+            text-align: center;
+            font-size: 9pt;
+        }
+        .obs-box textarea {
+            width: 100%;
+            height: 60px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px;
+            font-size: 9pt;
+        }
+
+        @media print {
+            .no-print { display: none; }
+        }
+        .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <button onclick="window.print();" class="print-button no-print">Imprimir</button>
+
+    <div class="romaneio-header">
+        <img src="{% static 'img/logo_reunidas2.png' %}" alt="Logo Reunidas">
+        <h1>Romaneio de Coleta</h1>
+        <p>Período de Agendamento: de <strong>{{ data_inicio|date:"d/m/Y" }}</strong> até <strong>{{ data_fim|date:"d/m/Y" }}</strong></p>
+        
+        {% if coletas_por_fornecedor.0.coletas.0.motorista %}
+        <p>Motorista: <strong>{{ coletas_por_fornecedor.0.coletas.0.motorista.nome }}</strong></p>
+        {% endif %}
+    </div>
+
+    {% for item_fornecedor in coletas_por_fornecedor %}
+    <div class="fornecedor-card">
+        <div class="fornecedor-header">
+            <h2>{{ item_fornecedor.fornecedor.nome }}</h2>
+            <span>Ordem de Visita: <strong>{{ item_fornecedor.coletas.0.ordem_visita }}</strong></span>
+        </div>
+        <div class="fornecedor-body">
+            <div class="info-pessoais">
+                <p><strong>Endereço:</strong> {{ item_fornecedor.fornecedor.endereco }}, {{ item_fornecedor.fornecedor.municipio }}</p>
+                <p><strong>Telefone:</strong> {{ item_fornecedor.fornecedor.telefone }}</p>
+            </div>
+
+            {% for coleta in item_fornecedor.coletas %}
+            <div class="coleta-bloco">
+                <div class="coleta-info">
+                    <p><strong>Pedido Nº:</strong> {{ coleta.pedido_liberado.numero_pedido|default:"AVULSO" }}</p>
+                    <p><strong>Volumes:</strong> {{ coleta.volumes|default_if_none:"N/A" }}</p>
+                    <p><strong>Peso (Kg):</strong> {{ coleta.peso_kg|localize|default_if_none:"N/A" }}</p>
+                </div>
+
+                <h4>Itens para Coletar:</h4>
+                <table class="item-tabela">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Produto</th>
+                            <th>Descrição</th>
+                            <th style="width: 15%;" class="numero">Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalhe in coleta.detalhes.all %}
+                        <tr>
+                             <td>{{ detalhe.item_erp.c7_produto }}</td>
+                            <td>{{ detalhe.item_erp.c7_descri }}</td>
+                            <td class="numero">{{ detalhe.quantidade_disponivel|localize }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                {% if coleta.descricao_avulsa %}
+                                    {{ coleta.descricao_avulsa|linebreaksbr }}
+                                {% else %}
+                                    Nenhum item detalhado para esta coleta.
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="fornecedor-footer">
+            <div class="obs-box">
+                <label for="obs-{{ forloop.counter }}"><strong>Observações do Motorista:</strong></label>
+                <textarea id="obs-{{ forloop.counter }}"></textarea>
+            </div>
+            <div>
+                <p><strong>Volumes Conferidos:</strong> ___________</p>
+                <p><strong>Recebido por:</strong> ________________________________</p>
+                <p><strong>Data:</strong> ____/____/________</p>
+                <div class="signature-box">
+                    Assinatura
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p style="text-align: center; font-size: 1.2em;">Nenhuma coleta agendada encontrada para o período selecionado.</p>
+    {% endfor %}
+</body>
+</html>

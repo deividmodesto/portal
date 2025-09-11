@@ -1,0 +1,10 @@
+﻿Olá, {{ nome_fornecedor }}.
+
+O Pedido de Compra Nº {{ numero_pedido }} foi liberado em nosso portal.
+
+Por favor, acesse o portal para nos informar quando o material estará disponível para coleta.
+
+https://logistica.reunidaspontal.com.br
+
+Atenciosamente,
+Reunidas

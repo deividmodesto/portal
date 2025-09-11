@@ -1,0 +1,44 @@
+{% comment %}
+    IMPORTANTE: Coloque o arquivo da sua logo em 'static/img/'.
+    Se o nome do arquivo for diferente de 'logo_reunidas.png',
+    altere a linha <img src="{% static 'img/logo_reunidas.png' %}" ... > abaixo.
+{% endcomment %}
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23; /* Verde Escuro */
+            --cor-destaque: #05B540;  /* Verde Claro */
+            --cor-alerta: #FFAA00;    /* Laranja Amarelado */
+            --cor-aviso: #FF6600;     /* Laranja */
+        }
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
+        .login-container { text-align: center; }
+        .logo { max-width: 250px; margin-bottom: 20px; }
+        form { background: white; padding: 2.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 320px; }
+        input { display: block; margin-bottom: 1.5em; padding: 0.8em; width: 95%; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 0.8em; width: 100%; background-color: var(--cor-principal); color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 1.1em; font-weight: bold; }
+        button:hover { background-color: #024e3a; }
+        .error { color: var(--cor-aviso); font-weight: bold; text-align: center; margin-bottom: 1em; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="{% static 'img/logo_reunidas2.png' %}" alt="Logo Reunidas" class="logo">
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="cnpj" placeholder="Seu CNPJ" required>
+            <input type="password" name="password" placeholder="Sua Senha" required>
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+</body>
+</html>

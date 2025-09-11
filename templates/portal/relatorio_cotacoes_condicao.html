@@ -1,0 +1,104 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Cotações por Condição - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;
+            --cor-alerta: #FFAA00;
+            --cor-info: #007bff;
+            --cor-aviso: #FF6600;
+            --cor-fundo: #f8f9fa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; margin: 0; background-color: var(--cor-fundo); color: #333; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        nav.menu-interno { margin-left: 30px; }
+        nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        nav.menu-interno a:hover { color: var(--cor-alerta); }
+        nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
+        main { padding: 2em; max-width: 1200px; margin: auto; }
+        .relatorio-container { background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.05); }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        .search-form { display: flex; gap: 1em; margin-bottom: 2em; }
+        .search-form input { padding: 0.8em; border-radius: 4px; border: 1px solid #ccc; flex-grow: 1; font-size: 1em; }
+        .search-form button { padding: 0.8em 1.5em; background-color: var(--cor-info); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+        .search-form button:hover { background-color: #0056b3; }
+        .produto-card { margin-bottom: 2.5em; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
+        .produto-header { background-color: #e9ecef; padding: 1.2em; font-size: 1.3em; font-weight: bold; color: var(--cor-principal); }
+        .produto-header .produto-descricao { font-size: 0.8em; font-weight: normal; color: #555; display: block; margin-top: 0.3em; }
+        .condicao-card { border: 1px solid #e0e0e0; border-radius: 8px; margin: 1em 1.5em; }
+        .condicao-header { background-color: #f8f9fa; padding: 1em; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 1.1em; }
+        .cotacoes-list { list-style: none; padding: 1em; margin: 0; }
+        .cotacoes-list li { display: flex; justify-content: space-between; padding: 0.5em 0; border-bottom: 1px dashed #eee; }
+        .cotacoes-list li:last-child { border-bottom: none; }
+        .best-price { color: var(--cor-destaque); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+            <nav class="menu-interno">
+                <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+                <a href="{% url 'portal:comprador_historico' %}">Histórico</a>
+                <a href="{% url 'portal:coleta_dashboard' %}">Painel de Coletas</a>
+                <a href="{% url 'portal:analise_cotacao' %}" class="active">Análise de Cotações</a>
+            </nav>
+        </div>
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+        </div>
+    </header>
+    <main>
+        <div class="relatorio-container">
+    <h2>Relatório de Cotações por Condição</h2>
+    <form method="get" class="search-form">
+        <input type="text" name="sc_num" placeholder="Digite o número da Solicitação de Compra (SC)" value="{{ sc_buscada|default:'' }}" required>
+        
+        <select name="filial">
+            <option value="">Todas as Filiais</option>
+            {% for f in filiais %}
+                <option value="{{ f }}" {% if f == filial_buscada %}selected{% endif %}>{{ f }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit">Gerar Relatório</button>
+    </form>
+
+    {% if sc_buscada and not cotacoes_agrupadas %}
+        <p>Nenhuma cotação com valor encontrada para a SC Nº {{ sc_buscada }} {% if filial_buscada %}na filial {{ filial_buscada }}{% endif %}.</p>
+    {% endif %}
+
+    {% for produto in cotacoes_agrupadas %}
+        <div class="produto-card">
+            <div class="produto-header">
+                {{ produto.codigo }}
+                <span class="produto-descricao">{{ produto.descricao }} | Filial: {{ produto.filial }}</span>
+            </div>
+            {% for condicao in produto.condicoes %}
+                <div class="condicao-card">
+                    <div class="condicao-header">Condição de Pagamento: {{ condicao.condicao }}</div>
+                    <ul class="cotacoes-list">
+                        {% for cotacao in condicao.cotacoes %}
+                            <li>
+                                <span>{{ cotacao.fornecedor_nome }}</span>
+                                <span class="{% if cotacao.is_best_price %}best-price{% endif %}">
+                                    R$ {{ cotacao.preco|localize }}
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+    </main>
+</body>
+</html>

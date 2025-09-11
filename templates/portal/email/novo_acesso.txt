@@ -1,0 +1,12 @@
+﻿Olá, {{ nome_fornecedor }}.
+
+Um acesso ao nosso Portal de Coletas foi criado para a sua empresa.
+
+Você pode acessá-lo em: https://logistica.reunidaspontal.com.br
+
+Seus dados de acesso são:
+Login: {{ cnpj }}
+Senha Provisória: {{ senha }}
+
+Atenciosamente,
+Reunidas

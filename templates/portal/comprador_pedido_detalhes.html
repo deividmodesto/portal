@@ -1,0 +1,127 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes do Pedido {{ pedido_num }} - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-alerta: #FFAA00;
+            --cor-sucesso: #05B540;
+            --cor-fundo: #f8f9fa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--cor-fundo); color: #333; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; max-width: 1200px; margin: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        .btn-voltar { background-color: #6c757d; color: white; padding: 0.6em 1.2em; border-radius: 4px; text-decoration: none; }
+        .pedido-info { background-color: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 2em; }
+        .pedido-info p { margin: 0.5em 0; }
+        
+        .aprovacao-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .aprovacao-list li {
+            background-color: #f8f9fa;
+            border-left: 3px solid #ccc;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        table { width: 100%; border-collapse: collapse; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #e9ecef; }
+        td.numero { text-align: right; }
+        .status-pendente { font-weight: bold; color: #d9534f; }
+        .progress-bar-container { background-color: #e9ecef; border-radius: 20px; overflow: hidden; margin-bottom: 1em; }
+        .progress-bar { height: 25px; background-color: var(--cor-sucesso); width: {{ status_entrega.percentual }}%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h2>Detalhes do Pedido Nº {{ pedido_num }}</h2>
+            <a href="{% url 'portal:comprador_dashboard' %}" class="btn-voltar">Voltar ao Dashboard</a>
+        </div>
+
+        <div class="pedido-info">
+            <h4>Status de Entrega do Pedido no Protheus</h4>
+            <div class="progress-bar-container">
+                <div class="progress-bar">{{ status_entrega.percentual }}%</div>
+            </div>
+            <p>
+                <strong>Total do Pedido:</strong> {{ status_entrega.total_pedido|localize }} | 
+                <strong>Total Entregue:</strong> {{ status_entrega.total_entregue|localize }} | 
+                <strong class="status-pendente">Saldo Pendente: {{ status_entrega.saldo_pendente|localize }}</strong>
+            </p>
+        </div>
+
+        <div class="pedido-info">
+            <h4>Informações do Pedido</h4>
+            <p><strong>Fornecedor:</strong> {{ nome_fornecedor }}</p>
+            <p><strong>Contato:</strong> {{ info_geral.c7_contato|default_if_none:"N/A" }}</p>
+            <p><strong>Data de Emissão:</strong> {{ info_geral.data_emissao_formatada }}</p>
+            <p><strong>Tipo de Frete:</strong> {{ tipo_frete }}</p>
+        </div>
+
+        {% if aprovacoes %}
+        <div class="pedido-info">
+            <h4>Status de Aprovação</h4>
+            <ul class="aprovacao-list">
+                {% for aprovacao in aprovacoes %}
+                    <li><strong>{{ aprovacao.aprovador }}:</strong> {{ aprovacao.status }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <h3>Itens do Pedido</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Produto</th>
+                    <th>Descrição</th>
+                    <th class="numero">Qtd. Pedido</th>
+                    <th class="numero">Qtd. Entregue</th>
+                    <th class="numero">Saldo Pendente</th>
+                    <th class="numero">Preço Unit.</th>
+                    <th class="numero">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens_pedido %}
+                <tr>
+                    <td>{{ item.c7_item }}</td>
+                    <td>{{ item.c7_produto }}</td>
+                    <td>{{ item.c7_descri }}</td>
+                    <td class="numero">{{ item.c7_quant|localize }}</td>
+                    <td class="numero">{{ item.c7_quje|localize }}</td>
+                    <td class="numero status-pendente"><strong>{{ item.saldo_pendente|localize }}</strong></td>
+                    <td class="numero">R$ {{ item.c7_preco|localize }}</td>
+                    <td class="numero">R$ {{ item.c7_total|localize }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2em;">Nenhum item encontrado para este pedido.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>

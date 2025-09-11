@@ -1,0 +1,8 @@
+Atenção,
+
+O fornecedor "{{ nome_fornecedor }}" acaba de marcar o Pedido de Compra Nº {{ numero_pedido }} como PRONTO PARA COLETA.
+
+Por favor, programe a retirada do material.
+
+--
+Notificação automática do Portal de Coletas.

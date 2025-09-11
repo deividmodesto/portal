@@ -1,0 +1,153 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes do Pedido {{ pedido.numero_pedido }}</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;
+            --cor-alerta: #FFAA00;
+            --cor-aviso: #FF6600;
+        }
+        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #e9ecef; }
+        .status-liberado { color: var(--cor-aviso); font-weight: bold; }
+        .status-pronto { color: var(--cor-destaque); font-weight: bold; }
+        .btn-pronto { background-color: var(--cor-destaque); color: white; padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.9em; }
+        .btn-pronto:hover { background-color: #048c32; }
+        .messages { padding: 0 2em; margin-top: 1em; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+        <div class="header-user">
+            <span>Olá, {{ request.user.fornecedor.nome_fornecedor }}</span> | <a href="{% url 'portal:logout' %}">Sair</a>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main>
+        <div class="page-header">
+            <h2>Pedido de Compra Nº {{ pedido.numero_pedido }}</h2>
+            <a href="{% url 'portal:dashboard' %}" class="btn-voltar">Voltar ao Dashboard</a>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <h3>Itens a Disponibilizar</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Produto</th>
+                        <th>Descrição</th>
+                        <th style="text-align: right;">Qtd. Pedido</th>
+                        <th style="text-align: right;">Qtd. Já Disponível</th>
+                        <th style="text-align: right;">Qtd. Pendente</th>
+                        <th style="width: 15%;">Qtd. a Disponibilizar Agora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr>
+                        <td>{{ item.erp.c7_item }}</td>
+                        <td>{{ item.erp.c7_produto }}</td>
+                        <td>{{ item.erp.c7_descri }}</td>
+                        <td style="text-align: right;">{{ item.erp.c7_quant|localize }}</td>
+                        <td style="text-align: right;">{{ item.disponivel|localize }}</td>
+                        <td style="text-align: right; font-weight: bold;">{{ item.pendente|localize }}</td>
+                        <td>
+                            <input type="number" name="quantidade_item_{{ item.erp.recno }}" step="0.01" min="0" max="{{ item.pendente }}" value="0" style="width: 90%;">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <br>
+             <h3>Informações da Coleta</h3>
+            <div class="filtros-container">
+                <div class="filtro-item">
+                    <label for="data_disponibilidade">Data para Retirada *</label>
+                    <input type="date" name="data_disponibilidade" required>
+                </div>
+                <div class="filtro-item">
+                    <label for="volumes">Volumes (caixas, pallets)</label>
+                    <input type="number" name="volumes">
+                </div>
+                <div class="filtro-item">
+                    <label for="peso_kg">Peso Total (Kg)</label>
+                    <input type="number" name="peso_kg" step="0.01">
+                </div>
+                
+                <div class="filtro-item">
+                    <label for="numero_nota">Número da Nota Fiscal</label>
+                    <input type="text" name="numero_nota_fiscal" id="numero_nota">
+                </div>
+                <div class="filtro-item">
+                    <label for="chave_acesso">Chave de Acesso NF-e</label>
+                    <input type="text" name="chave_acesso_nfe" id="chave_acesso" maxlength="44" pattern="\d*">
+                </div>
+
+            </div>
+
+            <button type="submit" class="btn-liberar" style="font-size: 1.1em; padding: 1em;">Disponibilizar Itens Informados</button>
+        </form>
+
+        <br><br>
+        <h2>Histórico de Liberações para este Pedido</h2>
+        <table>
+             <thead>
+                <tr>
+                    <th>Data da Liberação</th>
+                    <th>Itens</th>
+                    <th>Volumes</th>
+                    <th>Peso (Kg)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for coleta in coletas_anteriores %}
+                <tr>
+                    <td>{{ coleta.data_disponibilidade|date:"d/m/Y" }}</td>
+                    <td>
+                        <ul>
+                        {% for detalhe in coleta.detalhes.all %}
+                            <li>{{ detalhe.quantidade_disponivel|localize }} de {{ detalhe.item_erp.c7_produto }} - {{ detalhe.item_erp.c7_descri }}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                    <td>{{ coleta.volumes|default_if_none:"" }}</td>
+                    <td>{{ coleta.peso_kg|localize|default_if_none:"" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">Nenhuma liberação registrada para este pedido ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% extends "portal/base_interno.html" %}
+{% load static %}
+{% load l10n %}
+
+{% block content %}
+<main>
+    <div class="page-header">
+        <h2>Adicionar E-mail para {{ fornecedor.nome_fornecedor }}</h2>
+        <a href="{% url 'portal:comprador_dashboard' %}" class="btn btn-voltar">Voltar</a>
+    </div>
+
+    <form method="post" class="form-container">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-item full-width">
+                <label for="id_email">Endereço de E-mail</label>
+                {{ form.email }}
+            </div>
+            <div class="form-item full-width">
+                <label for="id_observacao">Observação</label>
+                {{ form.observacao }}
+            </div>
+        </div>
+        <br>
+        <button type="submit" class="btn btn-salvar">Salvar E-mail Adicional</button>
+    </form>
+</main>
+{% endblock %}

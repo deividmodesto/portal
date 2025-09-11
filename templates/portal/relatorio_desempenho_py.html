@@ -1,0 +1,64 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Desempenho - {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; color: #333; }
+        .report-header { text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 15px; margin-bottom: 30px; }
+        .report-header img { max-height: 60px; margin-bottom: 10px; }
+        h1 { font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; }
+        td.numero { text-align: center; }
+        .sem-dados { color: #999; }
+        @media print {
+            .no-print { display: none; }
+        }
+        .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <button onclick="window.print();" class="print-button no-print">Imprimir</button>
+
+    <div class="report-header">
+        <img src="{% static 'img/logo_reunidas2.png' %}" alt="Logo Reunidas">
+        <h1>Relatório de Desempenho de Fornecedores</h1>
+        <p>Período de Análise: de <strong>{{ data_inicio|date:"d/m/Y" }}</strong> até <strong>{{ data_fim|date:"d/m/Y" }}</strong></p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fornecedor</th>
+                <th class="numero">Pedidos Coletados</th>
+                <th class="numero">Coletas com Divergência</th>
+                <th class="numero">Tempo Médio de Preparo</th>
+                <th class="numero">Volume Total</th>
+                <th class="numero">Peso Total (Kg)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in desempenho_fornecedores %}
+            <tr>
+                <td>{{ f.nome_fornecedor }}</td>
+                <td class="numero">{{ f.total_pedidos_coletados }}</td>
+                <td class="numero">{{ f.coletas_com_divergencia }}</td>
+                <td class="numero">
+                    {{ f.tempo_medio_preparo_dias }} dia(s)
+                </td>
+                <td class="numero">{{ f.volume_total|default_if_none:"0" }}</td>
+                <td class="numero">{{ f.peso_total|localize|default_if_none:"0" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2em;">Nenhum dado de desempenho encontrado para fornecedores no período selecionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

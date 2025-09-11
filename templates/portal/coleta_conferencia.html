@@ -1,0 +1,120 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Conferência de Coleta - Pedido {{ coleta.pedido_liberado.numero_pedido }}</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;
+            --cor-alerta: #FFAA00;
+            --cor-info: #007bff;
+        }
+        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; max-width: 1200px; margin: auto; }
+        
+        /* Menu de Navegação Interno */
+        nav.menu-interno { margin-left: 30px; }
+        nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        nav.menu-interno a:hover { color: var(--cor-alerta); }
+        nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
+
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        h2 { margin: 0; }
+        .btn, button { padding: 0.6em 1.2em; border-radius: 4px; border: none; cursor: pointer; font-size: 1em; text-decoration: none; display: inline-block; }
+        .btn-voltar { background-color: #6c757d; color: white; }
+        .btn-confirmar { background-color: var(--cor-destaque); color: white; font-size: 1.1em !important; padding: 1em !important; }
+
+        .pedido-info { background-color: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 2em; }
+        .pedido-info p { margin: 0.5em 0; }
+        
+        table { width: 100%; border-collapse: collapse; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; }
+        td.numero { text-align: right; }
+        td input, td textarea, td select { width: 95%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        td textarea { min-height: 40px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+            <nav class="menu-interno">
+                <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+                <a href="{% url 'portal:comprador_historico' %}">Histórico</a>
+                <a href="{% url 'portal:coleta_dashboard' %}" class="active">Painel de Coletas</a>
+                <a href="{% url 'portal:relatorios' %}">Relatórios</a>
+                <a href="{% url 'portal:analise_cotacao' %}">Análise de Cotações</a>
+
+
+            </nav>
+        </div>
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h2>Conferência de Coleta - Pedido Nº {{ coleta.pedido_liberado.numero_pedido }}</h2>
+            <a href="{% url 'portal:coleta_dashboard' %}" class="btn btn-voltar">Voltar ao Painel</a>
+        </div>
+
+        <div class="pedido-info">
+            <p><strong>Fornecedor:</strong> {{ coleta.pedido_liberado.fornecedor_usuario.nome_fornecedor }}</p>
+            <p><strong>Data Disponibilizada pelo Fornecedor:</strong> {{ coleta.data_disponibilidade|date:"d/m/Y" }}</p>
+            {% if coleta.data_agendada %}
+                <p><strong>Coleta Agendada para:</strong> {{ coleta.data_agendada|date:"d/m/Y" }}</p>
+            {% endif %}
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <h3>Conferência de Itens</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Descrição</th>
+                        <th style="text-align: right;">Qtd. Declarada</th>
+                        <th style="text-align: center; width: 12%;">Qtd. Coletada</th>
+                        <th style="width: 20%;">Motivo da Divergência</th>
+                        <th style="width: 20%;">Observação (Detalhes/Outro)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalhe in detalhes_coleta %}
+                    <tr>
+                        <td>{{ detalhe.item_erp.c7_produto }}</td>
+                        <td>{{ detalhe.item_erp.c7_descri }}</td>
+                        <td class="numero" style="font-weight: bold;">{{ detalhe.quantidade_disponivel|localize }}</td>
+                        <td style="text-align: center;">
+                            <input type="text" name="qtd_coletada_{{ detalhe.id }}" value="{{ detalhe.quantidade_disponivel|localize }}" class="numero">
+                        </td>
+                        <td>
+                            <select name="motivo_divergencia_{{ detalhe.id }}">
+                                <option value="">-- Selecione --</option>
+                                {% for key, value in motivos_divergencia %}
+                                    <option value="{{ key }}" {% if detalhe.motivo_divergencia == key %}selected{% endif %}>{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <textarea name="obs_divergencia_{{ detalhe.id }}" rows="2">{{ detalhe.observacao_divergencia|default_if_none:"" }}</textarea>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+            <button type="submit" class="btn-confirmar">Confirmar Coleta Realizada</button>
+        </form>
+    </main>
+</body>
+</html>

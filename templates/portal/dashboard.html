@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;  /* Verde (Totalmente Disponível) */
+            --cor-alerta: #FFAA00;    /* Laranja (Não Respondido) */
+            --cor-info: #007bff;      /* Azul (Parcialmente Disponível) */
+            --cor-aviso: #FF6600;
+        }
+        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; }
+        .btn-detalhes { background-color: #6c757d; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; }
+        .btn-detalhes:hover { background-color: #5a6268; }
+        
+        /* --- ESTILOS PARA OS NOVOS STATUS --- */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+            text-align: center;
+        }
+        .status-liberado { background-color: var(--cor-alerta); }
+        .status-parcialmente_disponivel { background-color: var(--cor-info); }
+        .status-totalmente_disponivel { background-color: var(--cor-destaque); }
+        .status-coletado { background-color: #6c757d; } /* Cinza */
+
+        .messages { padding: 0 2em; margin-top: 1em; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+        <div class="header-user">
+            <span>Olá, {{ nome_fornecedor }}</span> | 
+            <form action="{% url 'portal:logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="background: none; border: none; color: var(--cor-alerta); cursor: pointer; text-decoration: none; font-weight: bold; padding: 0; font-family: sans-serif; font-size: 1em;">Sair</button>
+            </form>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="alert alert-success">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main>
+        <h2>Seus Pedidos Liberados</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nº do Pedido</th>
+                    <th>Data de Emissão</th>
+                    <th>Status</th>
+                    <th style="width: 15%;">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in pedidos %}
+                <tr>
+                    <td><a href="{% url 'portal:supplier_pedido_detalhes' pedido.id %}">{{ pedido.numero_pedido }}</a></td>
+                    <td>{{ pedido.data_emissao|date:"d/m/Y" }}</td>
+                    <td>
+                        <span class="status-badge status-{{ pedido.status|lower }}">
+                            {{ pedido.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'portal:supplier_pedido_detalhes' pedido.id %}" class="btn-detalhes">Gerenciar Coleta</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2em;">Nenhum pedido liberado no momento.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>

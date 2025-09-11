@@ -1,0 +1,14 @@
+{% extends "portal/coleta_dashboard.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Central de Relatórios</h2>
+</div>
+
+<div class="list-group">
+    <a href="{% url 'portal:plano_coletas' %}" class="list-group-item">
+        <h4>Plano de Coletas Agendadas</h4>
+        <p>Gere uma lista de trabalho com todas as coletas agendadas para um determinado período.</p>
+    </a>
+    </div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Conferir Coleta Avulsa - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23; --cor-destaque: #05B540; --cor-alerta: #FFAA00; --cor-info: #007bff;
+        }
+        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; max-width: 900px; margin: auto; }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5em; }
+        nav.menu-interno { margin-left: 30px; }
+        nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        nav.menu-interno a:hover { color: var(--cor-alerta); }
+        nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
+        .form-container { background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; }
+        .form-item { display: flex; flex-direction: column; }
+        .form-item.full-width { grid-column: 1 / -1; }
+        .form-item label { margin-bottom: 0.5em; font-weight: bold; color: #555; }
+        .form-item input, .form-item textarea { padding: 0.8em; border-radius: 4px; border: 1px solid #ccc; width: 95%; }
+        .btn { padding: 0.6em 1.2em; border-radius: 4px; border: none; cursor: pointer; font-size: 1em; text-decoration: none; display: inline-block; }
+        .btn-voltar { background-color: #6c757d; color: white; }
+        .btn-salvar { background-color: var(--cor-destaque); color: white; font-size: 1.1em !important; padding: 1em !important; max-width: 300px; margin-top: 1em; }
+        .messages { padding: 0 2em; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+            <nav class="menu-interno">
+                <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+                <a href="{% url 'portal:comprador_historico' %}">Histórico</a>
+                <a href="{% url 'portal:coleta_dashboard' %}" class="active">Painel de Coletas</a>
+                <a href="{% url 'portal:relatorios' %}">Relatórios</a>
+                <a href="{% url 'portal:analise_cotacao' %}">Análise de Cotações</a>
+            </nav>
+        </div>
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h2>Conferir Coleta Avulsa</h2>
+            <a href="{% url 'portal:coleta_dashboard' %}" class="btn btn-voltar">Voltar ao Painel</a>
+        </div>
+
+        <form method="post" class="form-container">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-item">
+                    <label for="fornecedor_avulso">Fornecedor / Local *</label>
+                    <input type="text" name="fornecedor_avulso" value="{{ coleta.fornecedor_avulso }}" required>
+                </div>
+                <div class="form-item">
+                    <label for="data_agendada">Data Agendada para Coleta *</label>
+                    <input type="date" name="data_agendada" value="{{ coleta.data_agendada|date:'Y-m-d' }}" required>
+                </div>
+                <div class="form-item">
+                    <label for="volumes">Volumes (caixas, pallets)</label>
+                    <input type="number" name="volumes" value="{{ coleta.volumes|default_if_none:'' }}">
+                </div>
+                <div class="form-item">
+                    <label for="peso_kg">Peso Total (Kg)</label>
+                    <input type="number" name="peso_kg" step="0.01" value="{{ coleta.peso_kg|default_if_none:'' }}">
+                </div>
+                <div class="form-item full-width">
+                    <label for="descricao_avulsa">Descrição do Material / Motivo</label>
+                    <textarea name="descricao_avulsa" rows="3">{{ coleta.descricao_avulsa|default_if_none:"" }}</textarea>
+                </div>
+                <div class="form-item full-width">
+                    <label for="observacao_coleta">Observações Internas (Pós-Coleta)</label>
+                    <textarea name="observacao_coleta" rows="2">{{ coleta.observacao_coleta|default_if_none:"" }}</textarea>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-salvar">Confirmar Coleta Realizada</button>
+        </form>
+    </main>
+</body>
+</html>

@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatórios - Portal Reunidas</title>
+    <style>
+        /* Colei aqui apenas o CSS necessário para esta página funcionar */
+        :root {
+            --cor-principal: #012E23; --cor-destaque: #05B540; --cor-alerta: #FFAA00;
+        }
+        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        nav.menu-interno { margin-left: 30px; }
+        nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        nav.menu-interno a:hover { color: var(--cor-alerta); }
+        nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
+        .page-header { display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Estilos para a lista de relatórios */
+        .relatorio-link {
+            display: block;
+            background-color: #fff;
+            padding: 1.5em;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-decoration: none;
+            color: #333;
+            border-left: 5px solid var(--cor-principal);
+            transition: all 0.2s ease-in-out;
+        }
+        .relatorio-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .relatorio-link h4 { margin: 0 0 0.5em 0; }
+        .relatorio-link p { margin: 0; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+            <nav class="menu-interno">
+                <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+                <a href="{% url 'portal:comprador_historico' %}">Histórico</a>
+                <a href="{% url 'portal:coleta_dashboard' %}">Painel de Coletas</a>
+                <a href="{% url 'portal:relatorios_hub' %}" class="active">Relatórios</a>
+            </nav>
+        </div>
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h2>Central de Relatórios</h2>
+        </div>
+
+        <div class="relatorio-link">
+            <a href="{% url 'portal:plano_coletas' %}" style="text-decoration:none; color: inherit;">
+                <h4>Plano de Coletas Agendadas</h4>
+                <p>Gere uma lista de trabalho com todas as coletas agendadas para um determinado período.</p>
+            </a>
+        </div>
+    </main>
+</body>
+</html>

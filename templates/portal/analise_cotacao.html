@@ -1,0 +1,135 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Análise de Cotações - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;
+            --cor-alerta: #FFAA00;
+            --cor-info: #007bff;
+            --cor-aviso: #FF6600;
+            --cor-fundo: #f8f9fa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; margin: 0; background-color: var(--cor-fundo); color: #333; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        nav.menu-interno { margin-left: 30px; }
+        nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        nav.menu-interno a:hover { color: var(--cor-alerta); }
+        nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
+        main { padding: 2em; max-width: 1200px; margin: auto; }
+        .analise-container { background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.05); }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        .search-form { display: flex; gap: 1em; margin-bottom: 2em; }
+        .search-form input, .search-form select { padding: 0.8em; border-radius: 4px; border: 1px solid #ccc; flex-grow: 1; font-size: 1em; }
+        .search-form button { padding: 0.8em 1.5em; background-color: var(--cor-info); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+        .search-form button:hover { background-color: #0056b3; }
+        .produto-card { margin-bottom: 2.5em; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
+        .produto-header { background-color: #e9ecef; padding: 1.2em; font-size: 1.3em; font-weight: bold; color: var(--cor-principal); }
+        .produto-header .produto-descricao { font-size: 0.8em; font-weight: normal; color: #555; display: block; margin-top: 0.3em; }
+        .cotacoes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5em; padding: 1.5em; }
+        .fornecedor-coluna { background-color: #fff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s ease-in-out; position: relative; }
+        .fornecedor-coluna:hover { transform: translateY(-5px); }
+        .fornecedor-header { background-color: #f8f9fa; padding: 1em; text-align: center; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 1.1em; }
+        .fornecedor-body { padding: 1em 1.5em; }
+        .fornecedor-body p { margin: 0.7em 0; font-size: 0.95em; display: flex; justify-content: space-between; align-items: center; }
+        .label { font-weight: 600; color: #555; }
+        .value { text-align: right; }
+        .total-price { font-size: 1.3em; font-weight: bold; color: var(--cor-principal); }
+        .best-price { border: 2px solid var(--cor-destaque); background-color: #e6f6e8; }
+        .best-price .fornecedor-header { background-color: #d4edda; }
+        .best-price::after {
+            content: "MELHOR OFERTA";
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--cor-destaque);
+            color: white;
+            font-size: 0.7em;
+            font-weight: bold;
+            padding: 0.3em 0.8em;
+            border-bottom-left-radius: 8px;
+        }
+        .info-header { font-weight: bold; color: var(--cor-principal); margin-top: 1em; padding-top: 1em; border-top: 1px dashed #ccc; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+            <nav class="menu-interno">
+                <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+                <a href="{% url 'portal:comprador_historico' %}">Histórico</a>
+                <a href="{% url 'portal:coleta_dashboard' %}">Painel de Coletas</a>
+                <a href="{% url 'portal:relatorios' %}">Relatórios</a>
+                <a href="{% url 'portal:gerenciar_locais' %}">Gerenciar Locais</a>
+                <a href="{% url 'portal:analise_cotacao' %}" class="active">Análise de Cotações</a>
+            </nav>
+        </div>
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'portal:logout' %}">Sair</a>
+        </div>
+    </header>
+    <main>
+        <div class="analise-container">
+            <h2>Análise Comparativa de Cotações</h2>
+            <form method="get" class="search-form">
+                <input type="text" name="sc_num" placeholder="Digite o número da Solicitação de Compra (SC)" value="{{ sc_buscada|default:'' }}" required>
+                
+                <select name="filial">
+                    <option value="">Todas as Filiais</option>
+                    {% for f in filiais %}
+                        <option value="{{ f }}" {% if f == filial_buscada %}selected{% endif %}>{{ f }}</option>
+                    {% endfor %}
+                </select>
+                
+                <button type="submit">Analisar</button>
+            </form>
+
+            {% if sc_buscada and not produtos_analisados %}
+                <p>Nenhuma cotação encontrada para a SC Nº {{ sc_buscada }} {% if filial_buscada %}na filial {{ filial_buscada }}{% endif %}.</p>
+            {% endif %}
+
+            {% for produto in produtos_analisados %}
+            <div class="produto-card">
+                <div class="produto-header">
+                    {{ produto.codigo }} - {{ produto.descricao }} | Qtd: {{ produto.quantidade|localize }} {{ produto.um }} | Filial: {{ produto.filial }}
+                    <span class="produto-descricao">
+                        Último Preço de Compra: 
+                        {% if produto.ultimo_preco %}
+                            R$ {{ produto.ultimo_preco|localize }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="cotacoes-grid">
+                    {% for cotacao in produto.cotacoes %}
+                    <div class="fornecedor-coluna {% if cotacao.is_best_price %}best-price{% endif %}">
+                        <div class="fornecedor-header">{{ cotacao.fornecedor_nome }}</div>
+                        <div class="fornecedor-body">
+                            <p><span class="label">Preço Unitário:</span> <strong class="value">R$ {{ cotacao.preco|localize }}</strong></p>
+                            <p><span class="label">Desconto:</span> <strong class="value">R$ {{ cotacao.desconto|localize }}</strong></p>
+                            <p><span class="label">Frete ({{ cotacao.tipo_frete }}):</span> <strong class="value">R$ {{ cotacao.frete|localize }}</strong></p>
+                            <p><span class="label">IPI:</span> <strong class="value">R$ {{ cotacao.ipi|localize }}</strong></p>
+                            <p><span class="label">ICMS:</span> <strong class="value">R$ {{ cotacao.icms|localize }}</strong></p>
+                            <hr style="border-top: 1px dashed #e0e0e0;">
+                            <p><span class="label total-price-label">Total do Item:</span> <strong class="value total-price">R$ {{ cotacao.total|localize }}</strong></p>
+                            <p class="info-header">Informações Adicionais</p>
+                            <p><span class="label">Cond. Pagamento:</span> <strong class="value">{{ cotacao.cond_pgto }}</strong></p>
+                            <p><span class="label">Data Entrega:</span> <strong class="value">{{ cotacao.data_entrega }}</strong></p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</body>
+</html>

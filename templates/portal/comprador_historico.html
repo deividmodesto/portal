@@ -1,0 +1,276 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico de Pedidos - Portal Reunidas</title>
+    <style>
+        :root {
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;
+            --cor-alerta: #FFAA00;
+            --cor-info: #007bff;
+        }
+        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        h2 { margin: 0; }
+        .btn { padding: 0.6em 1.2em; border-radius: 4px; border: none; cursor: pointer; font-size: 1em; text-decoration: none; display: inline-block; }
+        .btn-voltar { background-color: #6c757d; color: white; }
+        .filtros-container { background-color: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 2em; display: flex; flex-wrap: wrap; gap: 1.5em; align-items: flex-end; }
+        .filtro-item { display: flex; flex-direction: column; }
+        .filtro-item label { margin-bottom: 0.5em; font-weight: bold; color: #555; }
+        .filtro-item input, .filtro-item select { padding: 0.6em; border-radius: 4px; border: 1px solid #ccc; min-width: 200px; }
+        .btn-filtrar { background-color: #007bff; color: white; }
+        .btn-limpar { background-color: #6c757d; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; }
+        .status-pronto { color: var(--cor-destaque); font-weight: bold; }
+        .status-liberado { color: var(--cor-alerta); }
+        nav.menu-interno {
+            margin-left: 30px;
+        }
+        nav.menu-interno a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: bold;
+            padding: 5px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+        }
+        nav.menu-interno a:hover {
+            color: var(--cor-alerta);
+        }
+        nav.menu-interno a.active {
+            color: var(--cor-alerta);
+            border-bottom-color: var(--cor-alerta);
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5em;
+            margin-bottom: 2em;
+        }
+        .stat-card {
+            background-color: #fff;
+            padding: 1.5em;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--cor-principal);
+        }
+        .stat-card h4 {
+            margin-top: 0;
+            color: #555;
+            font-size: 1em;
+        }
+        .stat-card .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--cor-principal);
+        }
+        .stat-card.aguardando { border-left-color: var(--cor-alerta); }
+        .stat-card.aguardando .stat-number { color: var(--cor-alerta); }
+        .stat-card.prontos { border-left-color: var(--cor-info); }
+        .stat-card.prontos .stat-number { color: var(--cor-info); }
+        .stat-card.concluidos { border-left-color: var(--cor-destaque); }
+        .stat-card.concluidos .stat-number { color: var(--cor-destaque); }
+        .status-visualizado { color: var(--cor-destaque); font-weight: bold; }
+        .status-nao-visualizado { color: var(--cor-alerta); font-weight: bold; }
+        .btn-pdf { background-color: #6c757d; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; display: block; text-align: center; }
+        .btn-pdf:hover { background-color: #5a6268; }
+        .messages { padding: 0 2em; margin-top: 1em; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        .alert-error, .alert-warning { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+
+        /* Estilos para Paginação */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2em;
+            padding: 1em;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+        .pagination-controls a, .pagination-controls strong, .pagination-controls span {
+            padding: 8px 12px;
+            margin: 0 2px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--cor-principal);
+        }
+        .pagination-controls a {
+            border: 1px solid #dee2e6;
+        }
+        .pagination-controls a:hover {
+            background-color: #e9ecef;
+        }
+        .pagination-controls strong {
+            background-color: var(--cor-principal);
+            color: white;
+            border: 1px solid var(--cor-principal);
+        }
+    </style>
+</head>
+<body>
+    <header>
+    <div style="display: flex; align-items: center;">
+        <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+        <nav class="menu-interno">
+            <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+            <a href="{% url 'portal:comprador_historico' %}" class="active">Histórico</a>
+            <a href="{% url 'portal:coleta_dashboard' %}">Painel de Coletas</a>
+            <a href="{% url 'portal:relatorios' %}">Relatórios</a>
+            <a href="{% url 'portal:gerenciar_locais' %}">Gerenciar Locais</a>
+            <a href="{% url 'portal:analise_cotacao' %}">Análise de Cotações</a>
+        </nav>
+    </div>
+    <div class="header-user">
+        <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+    </div>
+</header>
+
+    <main>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="page-header">
+            <h2>Histórico de Pedidos Liberados</h2>
+            <a href="{% url 'portal:comprador_dashboard' %}" class="btn btn-voltar">Voltar para Pendentes</a>
+        </div>
+
+        <div class="stats-container">
+            </div>
+            
+        <form method="get" class="filtros-container">
+            <div class="filtro-item">
+                <label for="fornecedor">Fornecedor</label>
+                <select name="fornecedor" id="fornecedor" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    {% for f in fornecedores %}
+                        <option value="{{ f.id }}" {% if f.id|stringformat:"s" == filtros.fornecedor %}selected{% endif %}>{{ f.nome_fornecedor }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filtro-item">
+                <label for="data_liberacao">Data Liberação</label>
+                <input type="date" name="data_liberacao" id="data_liberacao" value="{{ filtros.data_liberacao }}" onchange="this.form.submit()">
+            </div>
+            <div class="filtro-item">
+                <label for="status">Status no Portal</label>
+                <select name="status" id="status" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    {% for key, value in status_choices %}
+                        <option value="{{ key }}" {% if key == filtros.status %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <a href="{% url 'portal:comprador_historico' %}" class="btn btn-limpar">Limpar Filtros</a>
+        </form>
+
+        <table>
+    <thead>
+        <tr>
+            <th>Nº do Pedido</th>
+            <th>Fornecedor</th>
+            <th>Data de Emissão</th>
+            <th>Data de Liberação</th>
+            <th>Status no Portal</th>
+            <th>Visualizado</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+            <tbody>
+        {% for pedido in pedidos_historico_page_obj %}
+        <tr>
+        <td><a href="{% url 'portal:comprador_pedido_detalhes' pedido.num_original pedido.filial %}">{{ pedido.numero_pedido }}</a></td>
+        <td>{{ pedido.fornecedor_usuario.nome_fornecedor }}</td>
+            <td>{{ pedido.data_emissao|date:"d/m/Y" }}</td>
+            <td>{{ pedido.data_liberacao_portal|date:"d/m/Y H:i" }}</td>
+            <td>
+                <span class="status-badge status-{{ pedido.status|lower }}">{{ pedido.get_status_display }}</span>
+            </td>
+            <td>
+                {% if pedido.data_visualizacao %}
+                    <span class="status-visualizado">Sim ({{ pedido.data_visualizacao|date:"d/m/Y H:i" }})</span>
+                {% else %}
+                    <span class="status-nao-visualizado">Não</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'portal:gerar_pedido_pdf' pedido.num_original pedido.filial %}" class="btn-pdf" target="_blank">Gerar PDF</a>
+                {% if pedido.status == 'LIBERADO' and not pedido.data_visualizacao %}
+                    <a href="{% url 'portal:enviar_lembrete' pedido.id %}" class="btn" style="background-color: var(--cor-alerta); color: #012E23; margin-top: 5px;" onclick="return confirm('Deseja realmente enviar um e-mail de lembrete para este fornecedor?');">
+                        Enviar Lembrete
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 2em;">Nenhum dado de histórico encontrado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+        </table>
+
+        <div class="pagination-controls">
+            <div class="pagination-info">
+                Página {{ pedidos_historico_page_obj.number }} de {{ pedidos_historico_page_obj.paginator.num_pages }}.
+                <span style="color: #6c757d; font-size: 0.9em;">({{ stats_historico.total_pedidos }} pedidos no total)</span>
+            </div>
+
+            <div class="pagination-links">
+                {% if pedidos_historico_page_obj.has_previous %}
+                    <a href="?page=1&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">&laquo; Primeira</a>
+                    <a href="?page={{ pedidos_historico_page_obj.previous_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">Anterior</a>
+                {% endif %}
+
+                {% for i in pedidos_historico_page_obj.paginator.page_range %}
+                    {% if pedidos_historico_page_obj.number == i %}
+                        <strong>{{ i }}</strong>
+                    {% elif i > pedidos_historico_page_obj.number|add:'-3' and i < pedidos_historico_page_obj.number|add:'3' %}
+                        <a href="?page={{ i }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">{{ i }}</a>
+                    {% elif forloop.counter == 1 or forloop.revcounter == 1 %}
+                         <span>...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pedidos_historico_page_obj.has_next %}
+                    <a href="?page={{ pedidos_historico_page_obj.next_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">Próxima</a>
+                    <a href="?page={{ pedidos_historico_page_obj.paginator.num_pages }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">Última &raquo;</a>
+                {% endif %}
+            </div>
+
+            <div class="pagination-per-page">
+                <form method="get" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span>Exibir:</span>
+                    {% for key, value in request.GET.items %}
+                        {% if key != 'per_page' and key != 'page' %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    <select name="per_page" onchange="this.form.submit()" style="padding: 0.4em; border-radius: 4px; border: 1px solid #ccc;">
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

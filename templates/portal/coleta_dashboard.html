@@ -1,0 +1,322 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Coletas - Portal Reunidas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --cor-principal: #012E23; --cor-destaque: #05B540; --cor-alerta: #FFAA00; --cor-info: #007bff; --cor-aviso: #FF6600;
+            --cor-pendente: #6c757d;
+            --cor-agendada: #007bff;
+            --cor-realizada-ok: #05B540;
+            --cor-realizada-divergencia: #FF6600;
+            --cor-background: #f0f2f5;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--cor-background); }
+        header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { height: 40px; }
+        .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
+        main { padding: 2em; }
+        h2, h3 { color: #343a40; }
+        h3 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1em; margin-top: 2em; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; }
+        nav.menu-interno { margin-left: 30px; }
+        nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        nav.menu-interno a:hover { color: var(--cor-alerta); }
+        nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
+        .filtros-container { background-color: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2em; display: flex; flex-wrap: wrap; gap: 1.5em; align-items: flex-end; }
+        .filtro-item { display: flex; flex-direction: column; }
+        .filtro-item label { margin-bottom: 0.5em; font-weight: bold; color: #555; font-size: 0.9em; }
+        .filtro-item input, .filtro-item select { padding: 0.6em; border-radius: 4px; border: 1px solid #ccc; min-width: 200px; }
+        .btn { padding: 0.6em 1.2em; border-radius: 4px; border: none; cursor: pointer; font-size: 1em; text-decoration: none; display: inline-block; transition: background-color 0.2s; }
+        .btn-limpar { background-color: #6c757d; color: white; }
+        .btn-limpar:hover { background-color: #5a6268; }
+
+        .kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5em; }
+        .kanban-column { min-width: 320px; background-color: #e9ecef; border-radius: 8px; display: flex; flex-direction: column; }
+        .kanban-column-header { padding: 1em; font-weight: bold; border-top: 4px solid; display: flex; align-items: center; gap: 0.7em; background-color: #dee2e6; border-top-left-radius: 8px; border-top-right-radius: 8px;}
+        .kanban-column-content { padding: 0.7em; overflow-y: auto; flex-grow: 1; min-height: 400px; }
+        
+        .status-PENDENTE .kanban-column-header { border-color: var(--cor-pendente); }
+        .status-AGENDADA .kanban-column-header { border-color: var(--cor-agendada); }
+        .status-REALIZADA_OK .kanban-column-header { border-color: var(--cor-realizada-ok); }
+        .status-REALIZADA_DIVERGENCIA .kanban-column-header { border-color: var(--cor-realizada-divergencia); }
+
+        .coleta-card { background-color: #fff; border-radius: 6px; margin-bottom: 1em; box-shadow: 0 2px 4px rgba(0,0,0,0.08); cursor: grab; border-left: 5px solid; }
+        .coleta-card:active { cursor: grabbing; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .prioridade-URGENTE { border-left-color: var(--cor-aviso) !important; }
+        .prioridade-NORMAL { border-left-color: var(--cor-info); }
+        .coleta-avulsa { border-left-color: var(--cor-alerta); }
+        
+        .coleta-header { padding: 0.8em 1em; border-bottom: 1px solid #f0f0f0; }
+        .coleta-header h5 { margin: 0; font-size: 1.1em; color: var(--cor-principal); }
+        .coleta-header span { font-size: 0.8em; color: #6c757d; }
+        .coleta-body { padding: 1em; font-size: 0.9em; display: flex; flex-direction: column; gap: 0.8em; }
+        .info-line { display: flex; align-items: center; gap: 0.5em; }
+        .info-line .fa-solid { color: #6c757d; width: 15px; text-align: center; }
+        .coleta-actions { padding: 1em; background-color: #f8f9fa; border-top: 1px solid #f0f0f0; }
+        .action-group { margin-bottom: 1em; }
+        .action-group:last-child { margin-bottom: 0; }
+        .action-group label { font-weight: bold; font-size: 0.85em; margin-bottom: 0.3em; display: block; }
+        .action-group input, .action-group select, .action-group textarea { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .action-group textarea { resize: vertical; min-height: 40px; }
+        .btn-salvar-planejamento { background-color: var(--cor-destaque); color: white; width: 100%; margin-top: 0.5em; }
+        .btn-agendar { background-color: var(--cor-info); color: white; }
+        .btn-conferir { background-color: var(--cor-principal); color: white; width: 100%; text-align: center; margin-top: 0.5em; }
+        
+        /* Estilos para a funcionalidade de colapsar */
+        .coletas-dia-container {
+            margin-bottom: 2em;
+        }
+        .coletas-dia-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5em 1em;
+            background-color: #e9ecef;
+            border-left: 5px solid var(--cor-info);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .coletas-dia-header:hover {
+            background-color: #dee2e6;
+        }
+        .coletas-dia-header h3 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .coletas-dia-header .toggle-icon {
+            font-size: 1.2em;
+            transition: transform 0.2s;
+        }
+        .coletas-dia-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+        .kanban-board.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+            <nav class="menu-interno">
+                <a href="{% url 'portal:comprador_dashboard' %}">Pedidos Pendentes</a>
+                <a href="{% url 'portal:comprador_historico' %}">Histórico</a>
+                <a href="{% url 'portal:coleta_dashboard' %}" class="active">Painel de Coletas</a>
+                <a href="{% url 'portal:relatorios' %}">Relatórios</a>
+                <a href="{% url 'portal:gerenciar_locais' %}">Gerenciar Locais</a>
+                <a href="{% url 'portal:analise_cotacao' %}">Análise de Cotações</a>
+            </nav>
+        </div>
+        <div class="header-user">
+            <span>Olá, {{ request.user.username }}</span> | <a href="{% url 'admin:logout' %}">Sair</a>
+        </div>
+    </header>
+
+    <main>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="page-header">
+            <h2>Painel de Planejamento de Coletas</h2>
+            <a href="{% url 'portal:adicionar_coleta_avulsa' %}" class="btn" style="background-color: #17a2b8; color: white;">+ Adicionar Coleta Avulsa</a>
+        </div>
+
+        <form method="get" class="filtros-container">
+            <div class="filtro-item">
+                <label for="fornecedor">Fornecedor</label>
+                <select name="fornecedor" id="fornecedor" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    {% for f in fornecedores %}
+                        <option value="{{ f.id }}" {% if f.id|stringformat:"s" == filtros.fornecedor %}selected{% endif %}>{{ f.nome_fornecedor|truncatechars:40 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filtro-item">
+                <label for="municipio">Município</label>
+                <select name="municipio" id="municipio" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    {% for m in municipios %}
+                        <option value="{{ m }}" {% if m == filtros.municipio %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filtro-item">
+                <label for="data_disponibilidade">Data Agendada</label>
+                <input type="date" name="data_disponibilidade" id="data_disponibilidade" value="{{ filtros.data_disponibilidade }}" onchange="this.form.submit()">
+            </div>
+            <div class="filtro-item">
+                <label for="status">Status da Coleta</label>
+                <select name="status" id="status" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    {% for status_key, status_value in status_choices %}
+                        <option value="{{ status_key }}" {% if status_key == filtros.status %}selected{% endif %}>{{ status_value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <a href="{% url 'portal:coleta_dashboard' %}" class="btn btn-limpar">Limpar Filtros</a>
+        </form>
+
+        {% for data, coletas_do_dia in coletas_por_data.items %}
+            <<div class="coletas-dia-container">
+    <div class="coletas-dia-header">
+        <h3>Coletas para {% if data == "Hoje" %}Hoje{% elif data == "Sem Data" %}Sem Data Definida{% else %}{{ data|date:"d/m/Y" }}{% endif %}</h3>
+        <i class="fa-solid fa-angle-down toggle-icon"></i>
+    </div>
+    <div class="kanban-board" data-data-coleta="{{ data|date:"Y-d-m" }}">
+                    {% for status_key, status_value in status_choices %}
+                    <div class="kanban-column status-{{ status_key }}">
+                        <div class="kanban-column-header">
+                            {% if status_key == 'PENDENTE' %}<i class="fa-solid fa-hourglass-half"></i>
+                            {% elif status_key == 'AGENDADA' %}<i class="fa-solid fa-calendar-check"></i>
+                            {% elif status_key == 'REALIZADA_OK' %}<i class="fa-solid fa-check-double"></i>
+                            {% elif status_key == 'REALIZADA_DIVERGENCIA' %}<i class="fa-solid fa-triangle-exclamation"></i>
+                            {% endif %}
+                            {{ status_value }}
+                        </div>
+                        <div class="kanban-column-content" id="coluna-{{ data|date:"Y-d-m" }}-{{ status_key }}" data-status="{{ status_key }}">
+                            {% for coleta in coletas_do_dia %}
+                                {% if coleta.status_coleta == status_key %}
+                                <div id="coleta-{{ coleta.id }}" class="coleta-card {% if coleta.pedido_liberado %}prioridade-{{ coleta.prioridade }}{% else %}coleta-avulsa{% endif %}" data-coleta-id="{{ coleta.id }}">
+                                    <div class="coleta-header">
+                                        <h5>{{ coleta.display_nome_fornecedor }}</h5>
+                                        <span>Pedido: <strong>{% if coleta.pedido_liberado %}{{ coleta.pedido_liberado.numero_pedido }}{% else %}AVULSO{% endif %}</strong></span>
+                                    </div>
+                                    <div class="coleta-body">
+                                        <div class="info-line"><i class="fa-solid fa-map-marker-alt"></i> <strong>Município:</strong> {{ coleta.display_municipio|default:"N/A" }}</div>
+                                        <div class="info-line"><i class="fa-solid fa-calendar-day"></i> <strong>Disponível:</strong> {{ coleta.data_disponibilidade|date:"d/m/Y" }}</div>
+                                        <div class="info-line"><i class="fa-solid fa-calendar-check"></i> <strong>Agendado:</strong> {{ coleta.data_agendada|date:"d/m/Y"|default:"-" }}</div>
+                                        <div class="info-line"><i class="fa-solid fa-box-open"></i> <strong>Volumes:</strong> {{ coleta.volumes|default_if_none:"-" }} | <strong>Peso:</strong> {{ coleta.peso_kg|localize|default_if_none:"-" }} Kg</div>
+                                        {% if coleta.detalhes.all %}
+                                            <div style="margin-top: 0.5em;">
+                                                <strong>Itens:</strong>
+                                                <ul style="font-size: 0.9em; padding-left: 20px; margin: 5px 0 0 0;">
+                                                {% for detalhe in coleta.detalhes.all %}
+                                                    {% if detalhe.item_erp %}
+                                                        <li>{{ detalhe.quantidade_disponivel|localize }}x {{ detalhe.item_erp.c7_descri }}</li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="coleta-actions">
+                                        <form method="post" style="width: 100%;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="coleta_id" value="{{ coleta.id }}">
+                                            
+                                            <div class="action-group">
+                                                <label>Agendamento</label>
+                                                <div style="display: flex; gap: 5px;">
+                                                    <input type="date" name="data_agendada" value="{{ coleta.data_agendada|date:'Y-d-m' }}">
+                                                    <button type="submit" name="agendar_coleta" class="btn btn-agendar">Salvar</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="action-group">
+                                                <label>Planejamento de Rota</label>
+                                                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                                                    <input type="number" name="ordem_visita" value="{{ coleta.ordem_visita|default:0 }}" min="0" title="Ordem de Visita" style="width: 60px;">
+                                                    <select name="motorista" style="flex-grow: 1;">
+                                                        <option value="">-- Motorista --</option>
+                                                        {% for motorista in motoristas %}
+                                                            <option value="{{ motorista.id }}" {% if coleta.motorista.id == motorista.id %}selected{% endif %}>{{ motorista.nome }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <textarea name="observacao_coleta" rows="2" placeholder="Observação interna...">{{ coleta.observacao_coleta|default_if_none:"" }}</textarea>
+                                                <button type="submit" name="salvar_planejamento" class="btn btn-salvar-planejamento">Salvar</button>
+                                            </div>
+                                            
+                                            <a href="{% if coleta.pedido_liberado %}{% url 'portal:coleta_conferencia' coleta.id %}{% else %}{% url 'portal:coleta_avulsa_conferencia' coleta.id %}{% endif %}" class="btn btn-conferir">Conferir Coleta</a>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <p style="text-align: center; background-color: #fff; padding: 2em; border-radius: 8px;">Nenhuma coleta encontrada para os filtros selecionados.</p>
+        {% endfor %}
+
+    </main>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const boards = document.querySelectorAll('.kanban-board');
+            
+            boards.forEach(board => {
+                const columns = board.querySelectorAll('.kanban-column-content');
+                columns.forEach(column => {
+                    new Sortable(column, {
+                        group: `coletas-${board.dataset.dataColeta}`,
+                        animation: 150,
+                        handle: '.coleta-header',
+                        onEnd: function (evt) {
+                            const toColumn = evt.to;
+                            const coletaIdsOrdenados = Array.from(toColumn.children).map(child => child.dataset.coletaId);
+                            const url = "{% url 'portal:atualizar_ordem_coleta' %}";
+                            const csrfToken = '{{ csrf_token }}';
+
+                            fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken
+                                },
+                                body: JSON.stringify({ ordem: coletaIdsOrdenados })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if(data.status !== 'success') {
+                                    console.error('Erro ao salvar a ordem:', data.message);
+                                } else {
+                                    console.log('Ordem salva com sucesso!');
+                                }
+                            })
+                            .catch(error => console.error('Erro na requisição:', error));
+                        }
+                    });
+                });
+            });
+
+            // Lógica para colapsar/expandir
+            const headers = document.querySelectorAll('.coletas-dia-header');
+            headers.forEach(header => {
+                header.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    const icon = this.querySelector('.toggle-icon');
+                    
+                    if (content.classList.contains('hidden')) {
+                        content.classList.remove('hidden');
+                        icon.classList.remove('fa-angle-right');
+                        icon.classList.add('fa-angle-down');
+                        this.classList.remove('collapsed');
+                    } else {
+                        content.classList.add('hidden');
+                        icon.classList.remove('fa-angle-down');
+                        icon.classList.add('fa-angle-right');
+                        this.classList.add('collapsed');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

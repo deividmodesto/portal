@@ -1,0 +1,67 @@
+{% load static %}
+{% load l10n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Roteiro de Coleta</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 10pt; }
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { margin: 0; }
+        h2 { background-color: #f2f2f2; padding: 10px; margin-top: 25px; font-size: 14pt; page-break-before: always; }
+        .fornecedor-card { border: 1px solid #ccc; margin-bottom: 20px; page-break-inside: avoid; }
+        .fornecedor-header { background-color: #e9ecef; padding: 10px; font-size: 12pt; font-weight: bold; }
+        .fornecedor-body { padding: 10px; }
+        .fornecedor-body p { margin: 5px 0; }
+        ul { padding-left: 20px; margin: 5px 0; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8pt; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Roteiro de Coleta</h1>
+        <p>Período: {{ data_inicial|date:"d/m/Y" }} a {{ data_final|date:"d/m/Y" }}</p>
+    </div>
+
+    {% for data, fornecedores in roteiro.items %}
+        <h2>Data de Coleta: {{ data|date:"d/m/Y" }}</h2>
+        {% for chave_fornecedor, dados_fornecedor in fornecedores.items %}
+            <div class="fornecedor-card">
+                <div class="fornecedor-header">{{ dados_fornecedor.display_info.nome_fornecedor }}</div>
+                <div class="fornecedor-body">
+                    {% with fornecedor_erp_info=dados_fornecedor.display_info.erp_info %}
+                        {% if fornecedor_erp_info %}
+                            <p><strong>Endereço:</strong> {{ fornecedor_erp_info.a2_end }}, {{ fornecedor_erp_info.a2_mun }}</p>
+                            <p><strong>Telefone:</strong> {{ fornecedor_erp_info.a2_tel }}</p>
+                        {% endif %}
+                    {% endwith %}
+                    <hr>
+                    {% for coleta in dados_fornecedor.coletas %}
+                        <p>
+                            <strong>Pedido:</strong> {{ coleta.pedido_liberado.numero_pedido|default:"AVULSO" }} | 
+                            <strong>Volumes:</strong> {{ coleta.volumes|default_if_none:"-" }} | 
+                            <strong>Peso:</strong> {{ coleta.peso_kg|localize|default_if_none:"-" }} Kg | 
+                            <strong>NF:</strong> {{ coleta.numero_nota_fiscal|default_if_none:"-" }}
+                        </p>
+                        <ul>
+                            {% if coleta.detalhes.all %}
+                                {% for detalhe in coleta.detalhes.all %}
+                                    <li>{{ detalhe.quantidade_disponivel|localize }}x {{ detalhe.item_erp_info.c7_produto }} - {{ detalhe.item_erp_info.c7_descri }}</li>
+                                {% endfor %}
+                            {% else %}
+                                <li>{{ coleta.descricao_avulsa|linebreaksbr }}</li>
+                            {% endif %}
+                        </ul>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="footer">
+        Gerado em {% now "d/m/Y H:i" %}
+    </div>
+</body>
+</html>

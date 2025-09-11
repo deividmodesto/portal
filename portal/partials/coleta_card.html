@@ -1,0 +1,55 @@
+<div id="coleta-{{ coleta.id }}" class="coleta-card {% if coleta.pedido_liberado %}prioridade-{{ coleta.prioridade }}{% else %}coleta-avulsa{% endif %}" data-coleta-id="{{ coleta.id }}">
+    <div class="coleta-header">
+        <h5>{{ coleta.display_nome_fornecedor }}</h5>
+        <span>Pedido: <strong>{% if coleta.pedido_liberado %}{{ coleta.pedido_liberado.numero_pedido }}{% else %}AVULSO{% endif %}</strong></span>
+    </div>
+    <div class="coleta-body">
+        <div class="info-line"><i class="fa-solid fa-map-marker-alt"></i> <strong>Município:</strong> {{ coleta.display_municipio|default:"N/A" }}</div>
+        <div class="info-line"><i class="fa-solid fa-calendar-day"></i> <strong>Disponível:</strong> {{ coleta.data_disponibilidade|date:"d/m/Y" }}</div>
+        <div class="info-line"><i class="fa-solid fa-calendar-check"></i> <strong>Agendado:</strong> {{ coleta.data_agendada|date:"d/m/Y"|default:"-" }}</div>
+        <div class="info-line"><i class="fa-solid fa-box-open"></i> <strong>Volumes:</strong> {{ coleta.volumes|default_if_none:"-" }} | <strong>Peso:</strong> {{ coleta.peso_kg|localize|default_if_none:"-" }} Kg</div>
+        {% if coleta.detalhes.all %}
+            <div style="margin-top: 0.5em;">
+                <strong>Itens:</strong>
+                <ul style="font-size: 0.9em; padding-left: 20px; margin: 5px 0 0 0;">
+                {% for detalhe in coleta.detalhes.all %}
+                    {% if detalhe.item_erp %}
+                        <li>{{ detalhe.quantidade_disponivel|localize }}x {{ detalhe.item_erp.c7_descri }}</li>
+                    {% endif %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+    <div class="coleta-actions">
+        <form method="post" style="width: 100%;">
+            {% csrf_token %}
+            <input type="hidden" name="coleta_id" value="{{ coleta.id }}">
+            
+            <div class="action-group">
+                <label>Agendamento</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="date" name="data_agendada" value="{{ coleta.data_agendada|date:'Y-m-d' }}">
+                    <button type="submit" name="agendar_coleta" class="btn btn-agendar">Salvar</button>
+                </div>
+            </div>
+
+            <div class="action-group">
+                <label>Planejamento de Rota</label>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <input type="number" name="ordem_visita" value="{{ coleta.ordem_visita|default:0 }}" min="0" title="Ordem de Visita" style="width: 60px;">
+                    <select name="motorista" style="flex-grow: 1;">
+                        <option value="">-- Motorista --</option>
+                        {% for motorista in motoristas %}
+                            <option value="{{ motorista.id }}" {% if coleta.motorista.id == motorista.id %}selected{% endif %}>{{ motorista.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <textarea name="observacao_coleta" rows="2" placeholder="Observação interna...">{{ coleta.observacao_coleta|default_if_none:"" }}</textarea>
+                <button type="submit" name="salvar_planejamento" class="btn btn-salvar-planejamento">Salvar</button>
+            </div>
+            
+            <a href="{% if coleta.pedido_liberado %}{% url 'portal:coleta_conferencia' coleta.id %}{% else %}{% url 'portal:coleta_avulsa_conferencia' coleta.id %}{% endif %}" class="btn btn-conferir">Conferir Coleta</a>
+        </form>
+    </div>
+</div>

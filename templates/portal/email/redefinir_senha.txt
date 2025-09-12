@@ -1,0 +1,12 @@
+Olá, {{ nome_fornecedor }}.
+
+Uma solicitação de redefinição de senha para o seu acesso ao Portal de Coletas foi realizada.
+
+Sua nova senha provisória é: {{ nova_senha }}
+
+Acesse o portal para fazer login com a nova senha.
+https://logistica.reunidaspontal.com.br
+
+Atenciosamente,
+Equipe de Suporte
+Reunidas

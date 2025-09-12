@@ -1,4 +1,3 @@
-# portal/urls.py
 from django.urls import path
 from . import views
 
@@ -8,6 +7,7 @@ urlpatterns = [
     # Login / Logout e Dashboard do Fornecedor
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('redefinir-senha/', views.redefinir_senha_view, name='redefinir_senha'),
     path('', views.dashboard_view, name='dashboard'),
     path('pedido/<int:pedido_id>/', views.supplier_pedido_detalhes_view, name='supplier_pedido_detalhes'),
 

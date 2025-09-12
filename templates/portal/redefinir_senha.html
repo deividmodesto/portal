@@ -1,21 +1,15 @@
-{% comment %}
-    IMPORTANTE: Coloque o arquivo da sua logo em 'static/img/'.
-    Se o nome do arquivo for diferente de 'logo_reunidas.png',
-    altere a linha <img src="{% static 'img/logo_reunidas.png' %}" ... > abaixo.
-{% endcomment %}
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Portal Reunidas</title>
+    <title>Redefinir Senha - Portal Reunidas</title>
     <style>
         :root {
-            --cor-principal: #012E23; /* Verde Escuro */
-            --cor-destaque: #05B540;  /* Verde Claro */
-            --cor-alerta: #FFAA00;    /* Laranja Amarelado */
-            --cor-aviso: #FF6600;     /* Laranja */
+            --cor-principal: #012E23;
+            --cor-destaque: #05B540;
+            --cor-alerta: #FFAA00;
+            --cor-aviso: #FF6600;
         }
         body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
         .login-container { text-align: center; }
@@ -25,8 +19,9 @@
         button { padding: 0.8em; width: 100%; background-color: var(--cor-principal); color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 1.1em; font-weight: bold; }
         button:hover { background-color: #024e3a; }
         .error { color: var(--cor-aviso); font-weight: bold; text-align: center; margin-bottom: 1em; }
-        .forgot-password { display: block; margin-top: 10px; font-size: 0.9em; color: #555; text-decoration: none; }
-        .forgot-password:hover { text-decoration: underline; }
+        .success { color: var(--cor-destaque); font-weight: bold; text-align: center; margin-bottom: 1em; }
+        .back-to-login { display: block; margin-top: 10px; font-size: 0.9em; color: #555; text-decoration: none; }
+        .back-to-login:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -34,13 +29,19 @@
         <img src="{% static 'img/logo_reunidas2.png' %}" alt="Logo Reunidas" class="logo">
         <form method="post">
             {% csrf_token %}
+            <h3>Redefinir Senha</h3>
+            <p>Informe o CNPJ da sua empresa para receber uma nova senha por e-mail.</p>
             <input type="text" name="cnpj" placeholder="Seu CNPJ" required>
-            <input type="password" name="password" placeholder="Sua Senha" required>
             {% if error %}
                 <p class="error">{{ error }}</p>
             {% endif %}
-            <button type="submit">Entrar</button>
-            <a href="{% url 'portal:redefinir_senha' %}" class="forgot-password">Esqueceu sua senha?</a>
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="success">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+            <button type="submit">Enviar Nova Senha</button>
+            <a href="{% url 'portal:login' %}" class="back-to-login">Voltar ao Login</a>
         </form>
     </div>
 </body>

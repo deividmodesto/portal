@@ -23,7 +23,7 @@ from weasyprint import HTML, CSS
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Max, F, Value as V
+from django.db.models import Max, F, Value as V, Min 
 from django.core.paginator import Paginator
 from django.http import JsonResponse # Adicione este import
 from django.views.decorators.http import require_POST # Adicione este import
@@ -41,7 +41,7 @@ from .models import (FornecedorUsuario, PedidoLiberado, SA2Fornecedor, SC7Pedido
                      ItemColeta, ItemColetaDetalhe, FornecedorAvulso, SC8CotacaoItem, 
                      SYSCompany, SC1, SE4, FornecedorEmailAdicional, SD1NFItem, SBM,
                      SCR010Aprovacao, SYSUSR) 
-from .models import Motorista
+from .models import Motorista, ItemColeta 
 from collections import defaultdict
 from itertools import groupby
 from operator import attrgetter
@@ -121,6 +121,45 @@ def login_view(request):
         else:
             error = "CNPJ ou senha inválidos."
     return render(request, 'portal/login.html', {'error': error})
+
+def redefinir_senha_view(request):
+    error = None
+    if request.method == 'POST':
+        cnpj_raw = request.POST.get('cnpj', '')
+        cnpj = re.sub(r'[^0-9]', '', cnpj_raw)
+        
+        try:
+            fornecedor = FornecedorUsuario.objects.get(cnpj=cnpj)
+            nova_senha = get_random_string(10)
+            
+            # Atualiza a senha no banco de dados
+            fornecedor.password = nova_senha
+            fornecedor.save()
+            
+            # Envia e-mail com a nova senha
+            contexto_email = {
+                'nome_fornecedor': fornecedor.nome_fornecedor,
+                'cnpj': fornecedor.cnpj,
+                'nova_senha': nova_senha,
+            }
+            corpo_email = render_to_string('portal/email/redefinir_senha.txt', contexto_email)
+            
+            send_mail(
+                subject='Redefinição de Senha do Portal de Coletas',
+                message=corpo_email,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[fornecedor.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, "Uma nova senha foi enviada para o e-mail cadastrado.")
+            return redirect('portal:redefinir_senha')
+            
+        except FornecedorUsuario.DoesNotExist:
+            error = "CNPJ não encontrado em nossa base de dados."
+
+    context = {'error': error}
+    return render(request, 'portal/redefinir_senha.html', context)
 
 def get_logo_base64():
     try:
@@ -879,7 +918,7 @@ def comprador_historico_view(request):
     historico_qs = PedidoLiberado.objects.select_related(
         'fornecedor_usuario'
     ).prefetch_related(
-        'coletas__detalhes'
+        'coletas'
     ).all()
 
     if filtro_fornecedor_id:
@@ -891,7 +930,11 @@ def comprador_historico_view(request):
     if filtro_status: # Aplicando o filtro de status
         historico_qs = historico_qs.filter(status=filtro_status)
 
-    historico_qs = historico_qs.order_by('-data_liberacao_portal')
+    # Adicionando anotações para a data de coleta e o status mais recente
+    historico_qs = historico_qs.annotate(
+        data_disponibilidade_coleta=Min('coletas__data_disponibilidade'),
+        status_coleta_display_key=Max('coletas__status_coleta')
+    ).order_by('-data_liberacao_portal')
 
     # Lógica de paginação
     per_page = request.GET.get('per_page', 25)
@@ -904,13 +947,19 @@ def comprador_historico_view(request):
     page_number = request.GET.get('page')
     pedidos_historico_page_obj = paginator.get_page(page_number)
     
+    status_map = dict(ItemColeta.STATUS_COLETA_CHOICES)
     for pedido in pedidos_historico_page_obj:
         try:
             pedido.num_original, pedido.filial = pedido.numero_pedido.split('-')
         except ValueError:
             pedido.num_original = pedido.numero_pedido
             pedido.filial = '01'
-            
+        
+        if pedido.status_coleta_display_key:
+            pedido.status_coleta_display = status_map.get(pedido.status_coleta_display_key, pedido.status_coleta_display_key)
+        else:
+             pedido.status_coleta_display = 'N/A'
+
     stats_historico = {
         'total_pedidos': paginator.count,
         'aguardando_fornecedor': historico_qs.filter(status='LIBERADO').count(),
@@ -1049,7 +1098,7 @@ def coleta_dashboard_view(request):
 
     # Agrupando para o Kanban
     coletas_por_data = defaultdict(list)
-    for coleta in sorted(todas_as_coletas, key=lambda c: (c.data_agendada is None, c.data_agendada, c.ordem_visita)):
+    for coleta in sorted(todas_as_coletas, key=lambda c: (c.data_agendada is not None, -c.data_agendada.toordinal() if c.data_agendada else 0, c.ordem_visita)):
         data_chave = coleta.data_agendada or "Sem Data"
         coletas_por_data[data_chave].append(coleta)
 

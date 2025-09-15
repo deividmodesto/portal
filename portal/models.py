@@ -175,7 +175,7 @@ class SC7PedidoItem(models.Model):
     c7_emissao = models.CharField(max_length=8, db_column='C7_EMISSAO')
     c7_fornece = models.CharField(max_length=20, db_column='C7_FORNECE')
     c7_encer = models.CharField(max_length=1, db_column='C7_ENCER', blank=True)
-    c7_conapro = models.CharField(max_length=1, db_column='C7_CONAPRO', blank=True, null=True) # Campo adicionado
+    c7_conapro = models.CharField(max_length=1, db_column='C7_CONAPRO', blank=True, null=True)
     c7_preco = models.DecimalField(max_digits=10, decimal_places=2, db_column='C7_PRECO')
     c7_total = models.DecimalField(max_digits=10, decimal_places=2, db_column='C7_TOTAL')
     c7_contato = models.CharField(max_length=50, db_column='C7_CONTATO', blank=True)
@@ -186,7 +186,6 @@ class SC7PedidoItem(models.Model):
     c7_compra = models.CharField(max_length=10, db_column='C7_COMPRA', blank=True)
     c7_quje = models.DecimalField(max_digits=10, decimal_places=2, db_column='C7_QUJE', default=0)
     c7_cond = models.CharField(max_length=20, db_column='C7_COND', blank=True, null=True)
-    c7_contato = models.CharField(max_length=50, db_column='C7_CONTATO', blank=True, null=True)
     c7_datprf = models.CharField(max_length=8, db_column='C7_DATPRF', blank=True, null=True)
     c7_ipi = models.DecimalField(max_digits=10, decimal_places=2, db_column='C7_IPI', default=0)
     c7_frete = models.DecimalField(max_digits=10, decimal_places=2, db_column='C7_FRETE', default=0)
@@ -196,6 +195,7 @@ class SC7PedidoItem(models.Model):
     c7_local = models.CharField(max_length=10, db_column='C7_LOCAL', blank=True, null=True)
     c7_um = models.CharField(max_length=4, db_column='C7_UM', blank=True, null=True)
     c7_obs = models.CharField(max_length=255, db_column='C7_OBS', blank=True, null=True)
+    d_e_l_e_t = models.CharField(max_length=1, db_column='D_E_L_E_T_', blank=True)
 
     @property
     def data_emissao_formatada(self):

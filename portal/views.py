@@ -263,7 +263,7 @@ def supplier_pedido_detalhes_view(request, pedido_id):
     itens_erp = SC7PedidoItem.objects.filter(
         c7_num=num_pedido_original, 
         c7_filial=filial_pedido
-    ).exclude(d_e_l_e_t='*').order_by('c7_item')
+    ).order_by('c7_item')
     
     itens_ja_disponiveis = ItemColetaDetalhe.objects.filter(
         item_coleta__pedido_liberado=pedido_liberado
@@ -524,9 +524,7 @@ def comprador_dashboard_view(request):
 
 
 def preparar_contexto_pdf(pedido_num, filial, fornecedor_erp=None):
-    itens_pedido_erp = SC7PedidoItem.objects.filter(
-        c7_num=pedido_num, c7_filial=filial
-    ).exclude(d_e_l_e_t='*').order_by('c7_item') # <-- Filtro adicionado aqui
+    itens_pedido_erp = SC7PedidoItem.objects.filter(c7_num=pedido_num, c7_filial=filial).order_by('c7_item')
     if not itens_pedido_erp.exists():
         raise Http404("Pedido não encontrado no ERP para esta filial")
 
@@ -828,9 +826,7 @@ def criar_acesso_fornecedor_view(request, fornecedor_cod):
 
 @staff_member_required
 def comprador_pedido_detalhes_view(request, pedido_num, filial):
-    itens_pedido = SC7PedidoItem.objects.filter(
-        c7_num=pedido_num, c7_filial=filial
-    ).exclude(d_e_l_e_t='*').order_by('c7_item') # <-- Filtro adicionado aqui
+    itens_pedido = SC7PedidoItem.objects.filter(c7_num=pedido_num, c7_filial=filial).order_by('c7_item')
     if not itens_pedido.exists():
         raise Http404("Pedido não encontrado")
 
@@ -917,11 +913,7 @@ def comprador_historico_view(request):
     filtro_fornecedor_id = request.GET.get('fornecedor', '')
     filtro_pedido_num = request.GET.get('pedido', '')
     filtro_data_liberacao = request.GET.get('data_liberacao', '')
-    filtro_status = request.GET.get('status', '') # Filtro de status existente
-
-    # NOVOS FILTROS ADICIONADOS
-    filtro_data_disponibilidade = request.GET.get('data_disponibilidade_coleta', '')
-    filtro_status_coleta = request.GET.get('status_coleta', '')
+    filtro_status = request.GET.get('status', '') # Novo filtro de status
 
     historico_qs = PedidoLiberado.objects.select_related(
         'fornecedor_usuario'
@@ -937,13 +929,6 @@ def comprador_historico_view(request):
         historico_qs = historico_qs.filter(data_liberacao_portal__date=filtro_data_liberacao)
     if filtro_status: # Aplicando o filtro de status
         historico_qs = historico_qs.filter(status=filtro_status)
-
-    # LÓGICA PARA NOVOS FILTROS
-    if filtro_data_disponibilidade:
-        historico_qs = historico_qs.filter(coletas__data_disponibilidade=filtro_data_disponibilidade)
-        
-    if filtro_status_coleta:
-        historico_qs = historico_qs.filter(coletas__status_coleta=filtro_status_coleta)
 
     # Adicionando anotações para a data de coleta e o status mais recente
     historico_qs = historico_qs.annotate(
@@ -990,15 +975,12 @@ def comprador_historico_view(request):
         'pedidos_historico_page_obj': pedidos_historico_page_obj,
         'per_page': per_page,
         'fornecedores': fornecedores_com_pedidos,
-        'status_choices': PedidoLiberado.STATUS_CHOICES,
-        'status_coleta_choices': ItemColeta.STATUS_COLETA_CHOICES, # ENVIANDO OPÇÕES PARA O TEMPLATE
+        'status_choices': PedidoLiberado.STATUS_CHOICES, # Enviando as opções de status para o template
         'filtros': {
             'fornecedor': filtro_fornecedor_id,
             'pedido': filtro_pedido_num,
             'data_liberacao': filtro_data_liberacao,
-            'status': filtro_status,
-            'data_disponibilidade_coleta': filtro_data_disponibilidade, # ENVIANDO VALOR ATUAL
-            'status_coleta': filtro_status_coleta, # ENVIANDO VALOR ATUAL
+            'status': filtro_status, # Enviando o valor do filtro atual
         },
         'stats_historico': stats_historico,
     }

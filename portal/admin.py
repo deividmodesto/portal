@@ -112,7 +112,7 @@ class SC7PedidoAdmin(admin.ModelAdmin):
         )
         
         # 3. Aplica os filtros necessários
-        qs = qs.exclude(c7_encer='E').exclude(d_e_l_e_t='*').exclude(c7_num__in=pedidos_ja_liberados)
+        qs = qs.exclude(c7_encer='E').exclude(c7_num__in=pedidos_ja_liberados)
         
         # 4. Aplica o agrupamento para mostrar apenas uma linha por pedido
         qs = qs.annotate(

@@ -22,7 +22,6 @@
         .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
         main { padding: 2em; }
         h2, h3 { color: #343a40; }
-        h3 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1em; margin-top: 2em; }
         .page-header { display: flex; justify-content: space-between; align-items: center; }
         nav.menu-interno { margin-left: 30px; }
         nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
@@ -68,7 +67,32 @@
         .btn-agendar { background-color: var(--cor-info); color: white; }
         .btn-conferir { background-color: var(--cor-principal); color: white; width: 100%; text-align: center; margin-top: 0.5em; }
         
-        /* Estilos para a funcionalidade de colapsar */
+        .tabs {
+            margin-bottom: 1.5em;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tab-link {
+            display: inline-block;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-link.active {
+            color: var(--cor-principal);
+            border-bottom-color: var(--cor-principal);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
         .coletas-dia-container {
             margin-bottom: 2em;
         }
@@ -81,6 +105,7 @@
             border-left: 5px solid var(--cor-info);
             cursor: pointer;
             border-radius: 4px;
+            margin-bottom: 1em;
         }
         .coletas-dia-header:hover {
             background-color: #dee2e6;
@@ -168,96 +193,78 @@
             <a href="{% url 'portal:coleta_dashboard' %}" class="btn btn-limpar">Limpar Filtros</a>
         </form>
 
-        {% for data, coletas_do_dia in coletas_por_data.items %}
-            <<div class="coletas-dia-container">
-    <div class="coletas-dia-header">
-        <h3>Coletas para {% if data == "Hoje" %}Hoje{% elif data == "Sem Data" %}Sem Data Definida{% else %}{{ data|date:"d/m/Y" }}{% endif %}</h3>
-        <i class="fa-solid fa-angle-down toggle-icon"></i>
-    </div>
-    <div class="kanban-board" data-data-coleta="{{ data|date:"Y-d-m" }}">
-                    {% for status_key, status_value in status_choices %}
-                    <div class="kanban-column status-{{ status_key }}">
-                        <div class="kanban-column-header">
-                            {% if status_key == 'PENDENTE' %}<i class="fa-solid fa-hourglass-half"></i>
-                            {% elif status_key == 'AGENDADA' %}<i class="fa-solid fa-calendar-check"></i>
-                            {% elif status_key == 'REALIZADA_OK' %}<i class="fa-solid fa-check-double"></i>
-                            {% elif status_key == 'REALIZADA_DIVERGENCIA' %}<i class="fa-solid fa-triangle-exclamation"></i>
-                            {% endif %}
-                            {{ status_value }}
-                        </div>
-                        <div class="kanban-column-content" id="coluna-{{ data|date:"Y-d-m" }}-{{ status_key }}" data-status="{{ status_key }}">
-                            {% for coleta in coletas_do_dia %}
-                                {% if coleta.status_coleta == status_key %}
-                                <div id="coleta-{{ coleta.id }}" class="coleta-card {% if coleta.pedido_liberado %}prioridade-{{ coleta.prioridade }}{% else %}coleta-avulsa{% endif %}" data-coleta-id="{{ coleta.id }}">
-                                    <div class="coleta-header">
-                                        <h5>{{ coleta.display_nome_fornecedor }}</h5>
-                                        <span>Pedido: <strong>{% if coleta.pedido_liberado %}{{ coleta.pedido_liberado.numero_pedido }}{% else %}AVULSO{% endif %}</strong></span>
-                                    </div>
-                                    <div class="coleta-body">
-                                        <div class="info-line"><i class="fa-solid fa-map-marker-alt"></i> <strong>Município:</strong> {{ coleta.display_municipio|default:"N/A" }}</div>
-                                        <div class="info-line"><i class="fa-solid fa-calendar-day"></i> <strong>Disponível:</strong> {{ coleta.data_disponibilidade|date:"d/m/Y" }}</div>
-                                        <div class="info-line"><i class="fa-solid fa-calendar-check"></i> <strong>Agendado:</strong> {{ coleta.data_agendada|date:"d/m/Y"|default:"-" }}</div>
-                                        <div class="info-line"><i class="fa-solid fa-box-open"></i> <strong>Volumes:</strong> {{ coleta.volumes|default_if_none:"-" }} | <strong>Peso:</strong> {{ coleta.peso_kg|localize|default_if_none:"-" }} Kg</div>
-                                        {% if coleta.detalhes.all %}
-                                            <div style="margin-top: 0.5em;">
-                                                <strong>Itens:</strong>
-                                                <ul style="font-size: 0.9em; padding-left: 20px; margin: 5px 0 0 0;">
-                                                {% for detalhe in coleta.detalhes.all %}
-                                                    {% if detalhe.item_erp %}
-                                                        <li>{{ detalhe.quantidade_disponivel|localize }}x {{ detalhe.item_erp.c7_descri }}</li>
-                                                    {% endif %}
-                                                {% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="coleta-actions">
-                                        <form method="post" style="width: 100%;">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="coleta_id" value="{{ coleta.id }}">
-                                            
-                                            <div class="action-group">
-                                                <label>Agendamento</label>
-                                                <div style="display: flex; gap: 5px;">
-                                                    <input type="date" name="data_agendada" value="{{ coleta.data_agendada|date:'Y-d-m' }}">
-                                                    <button type="submit" name="agendar_coleta" class="btn btn-agendar">Salvar</button>
-                                                </div>
-                                            </div>
+        <div class="tabs">
+            <button class="tab-link active" onclick="openTab(event, 'dia')">Diário</button>
+            <button class="tab-link" onclick="openTab(event, 'semana')">Semanal</button>
+            <button class="tab-link" onclick="openTab(event, 'mes')">Mensal</button>
+        </div>
 
-                                            <div class="action-group">
-                                                <label>Planejamento de Rota</label>
-                                                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-                                                    <input type="number" name="ordem_visita" value="{{ coleta.ordem_visita|default:0 }}" min="0" title="Ordem de Visita" style="width: 60px;">
-                                                    <select name="motorista" style="flex-grow: 1;">
-                                                        <option value="">-- Motorista --</option>
-                                                        {% for motorista in motoristas %}
-                                                            <option value="{{ motorista.id }}" {% if coleta.motorista.id == motorista.id %}selected{% endif %}>{{ motorista.nome }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <textarea name="observacao_coleta" rows="2" placeholder="Observação interna...">{{ coleta.observacao_coleta|default_if_none:"" }}</textarea>
-                                                <button type="submit" name="salvar_planejamento" class="btn btn-salvar-planejamento">Salvar</button>
-                                            </div>
-                                            
-                                            <a href="{% if coleta.pedido_liberado %}{% url 'portal:coleta_conferencia' coleta.id %}{% else %}{% url 'portal:coleta_avulsa_conferencia' coleta.id %}{% endif %}" class="btn btn-conferir">Conferir Coleta</a>
-                                        </form>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
+        <div id="dia" class="tab-content active">
+            {% for data, coletas_do_dia in coletas_por_dia.items %}
+                <div class="coletas-dia-container">
+                    <div class="coletas-dia-header">
+                        <h3>Coletas para {% if data == "Hoje" %}Hoje{% elif data == "Sem Data" %}Sem Data Definida{% else %}{{ data|date:"d/m/Y" }}{% endif %}</h3>
+                        <i class="fa-solid fa-angle-down toggle-icon"></i>
                     </div>
-                    {% endfor %}
+                    <div class="kanban-board" data-data-coleta="{{ data|date:"Y-m-d" }}">
+                        {% include 'portal/partials/kanban_coluns.html' with coletas_do_dia=coletas_do_dia %}
+                    </div>
                 </div>
-            </div>
-        {% empty %}
-            <p style="text-align: center; background-color: #fff; padding: 2em; border-radius: 8px;">Nenhuma coleta encontrada para os filtros selecionados.</p>
-        {% endfor %}
+            {% empty %}
+                <p style="text-align: center; background-color: #fff; padding: 2em; border-radius: 8px;">Nenhuma coleta para hoje.</p>
+            {% endfor %}
+        </div>
+        
+        <div id="semana" class="tab-content">
+            {% for data, coletas_da_semana in coletas_por_semana.items %}
+                 <div class="coletas-dia-container">
+                     <div class="coletas-dia-header">
+                        <h3>{{ data }}</h3>
+                        <i class="fa-solid fa-angle-down toggle-icon"></i>
+                    </div>
+                    <div class="kanban-board" data-data-coleta="semana-{{ forloop.counter }}">
+                        {% include 'portal/partials/kanban_coluns.html' with coletas_do_dia=coletas_da_semana %}
+                    </div>
+                </div>
+            {% empty %}
+                <p style="text-align: center; background-color: #fff; padding: 2em; border-radius: 8px;">Nenhuma coleta para esta semana.</p>
+            {% endfor %}
+        </div>
+        
+        <div id="mes" class="tab-content">
+            {% for data, coletas_do_mes in coletas_por_mes.items %}
+                 <div class="coletas-dia-container">
+                     <div class="coletas-dia-header">
+                        <h3>{{ data }}</h3>
+                        <i class="fa-solid fa-angle-down toggle-icon"></i>
+                    </div>
+                    <div class="kanban-board" data-data-coleta="mes-{{ forloop.counter }}">
+                        {% include 'portal/partials/kanban_coluns.html' with coletas_do_dia=coletas_do_mes %}
+                    </div>
+                </div>
+            {% empty %}
+                <p style="text-align: center; background-color: #fff; padding: 2em; border-radius: 8px;">Nenhuma coleta para este mês.</p>
+            {% endfor %}
+        </div>
 
     </main>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script>
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-link");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const boards = document.querySelectorAll('.kanban-board');
             

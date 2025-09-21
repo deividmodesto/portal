@@ -16,10 +16,10 @@ urlpatterns = [
     # Dashboards
     path('interno/dashboard/', views.comprador_dashboard_view, name='comprador_dashboard'),
     path('interno/historico/', views.comprador_historico_view, name='comprador_historico'),
-    path('interno/historico/enviar-lembrete/<int:pedido_id>/', views.enviar_lembrete_view, name='enviar_lembrete'), # Linha adicionada
+    path('interno/historico/enviar-lembrete/<int:pedido_id>/', views.enviar_lembrete_view, name='enviar_lembrete'),
 
     # Detalhes e Ações do Pedido (Ações do Comprador)
-       path('interno/pedido/<str:pedido_num>/<str:filial>/detalhes/', views.comprador_pedido_detalhes_view, name='comprador_pedido_detalhes'),
+    path('interno/pedido/<str:pedido_num>/<str:filial>/detalhes/', views.comprador_pedido_detalhes_view, name='comprador_pedido_detalhes'),
     path('interno/pedido/<str:pedido_num>/<str:filial>/liberar/', views.liberar_pedido_view, name='liberar_pedido'),
     path('interno/pedido/<str:pedido_num>/<str:filial>/pdf/', views.gerar_pedido_pdf_view, name='gerar_pedido_pdf'),
     
@@ -33,7 +33,6 @@ urlpatterns = [
     path('interno/coletas/atualizar-ordem/', views.atualizar_ordem_coleta, name='atualizar_ordem_coleta'),
 
     
-    # CORREÇÃO: Garanta que esta linha aponta para a view correta.
     path('interno/coletas/conferencia/<int:coleta_id>/', views.coleta_conferencia_view, name='coleta_conferencia'),
     
     path('interno/coletas/avulsa/adicionar/', views.adicionar_coleta_avulsa_view, name='adicionar_coleta_avulsa'),
@@ -51,9 +50,17 @@ urlpatterns = [
     path('interno/relatorios/romaneio/', views.gerar_romaneio_view, name='gerar_romaneio'),
     path('interno/relatorios/divergencias/', views.gerar_divergencias_view, name='gerar_divergencias'),
     path('interno/relatorios/desempenho/', views.gerar_desempenho_view, name='gerar_desempenho'),
+    path('interno/relatorios/pendencias-embarque/', views.gerar_pendencias_embarque_view, name='gerar_pendencias_embarque'),
 
     # Análise de Cotações
     path('interno/cotacoes/analise/', views.analise_cotacao_view, name='analise_cotacao'),
     path('interno/cotacoes/relatorio-condicao/', views.cotacoes_por_condicao_view, name='relatorio_cotacoes_condicao'),
-    
+
+    # --- URL ADICIONADA PARA ACOMPANHAMENTO ---
+    path('interno/rotas/acompanhamento/', views.acompanhamento_rotas_view, name='acompanhamento_rotas'),
+   
+
+    # --- URL ADICIONADA PARA O MAPA ---
+    path('interno/rotas/<int:rota_id>/mapa/', views.rota_mapa_view, name='rota_mapa'),
+
 ]

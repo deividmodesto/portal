@@ -6,9 +6,17 @@ from django.db.models.functions import RowNumber
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from .models import Motorista 
+from django.contrib.auth.models import User
+from django.urls import reverse
+from django.utils.html import format_html
+
 
 # Importa todos os modelos necessários
-from .models import FornecedorUsuario, PedidoLiberado, SA2Fornecedor, SC7PedidoItem, ItemColeta, ItemColetaDetalhe, FornecedorAvulso, FornecedorEmailAdicional
+from .models import (
+    Motorista, FornecedorUsuario, PedidoLiberado, SA2Fornecedor,
+    SC7PedidoItem, ItemColeta, ItemColetaDetalhe, FornecedorAvulso,
+    FornecedorEmailAdicional, Rota, PontoGPS, EventoColeta
+)
 
 
 class FornecedorEmailAdicionalInline(admin.TabularInline):
@@ -112,7 +120,7 @@ class SC7PedidoAdmin(admin.ModelAdmin):
         )
         
         # 3. Aplica os filtros necessários
-        qs = qs.exclude(c7_encer='E').exclude(c7_num__in=pedidos_ja_liberados)
+        qs = qs.exclude(c7_encer='E').exclude(d_e_l_e_t='*').exclude(c7_num__in=pedidos_ja_liberados)
         
         # 4. Aplica o agrupamento para mostrar apenas uma linha por pedido
         qs = qs.annotate(
@@ -148,3 +156,40 @@ class MotoristaAdmin(admin.ModelAdmin):
     list_display = ('nome', 'telefone', 'ativo')
     search_fields = ('nome',)
     list_filter = ('ativo',)
+
+    # Esta função cria um novo usuário Django quando um novo motorista é salvo
+    def save_model(self, request, obj, form, change):
+        if not obj.user:
+            # Cria um username simples a partir do nome do motorista
+            username = "".join(obj.nome.lower().split())
+            
+            # Cria o usuário Django
+            user = User.objects.create_user(
+                username=username,
+                password=obj.telefone # Usa o telefone como senha inicial
+            )
+            obj.user = user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(Rota)
+class RotaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'motorista', 'data', 'hora_inicio', 'hora_fim', 'ver_mapa')
+    list_filter = ('data', 'motorista')
+    
+    def ver_mapa(self, obj):
+        url = reverse('portal:rota_mapa', args=[obj.id])
+        return format_html(f'<a href="{url}" target="_blank">Ver Rota no Mapa</a>')
+    ver_mapa.short_description = 'Mapa da Rota'
+
+@admin.register(PontoGPS)
+class PontoGPSAdmin(admin.ModelAdmin):
+    list_display = ('id', 'rota', 'latitude', 'longitude', 'timestamp')
+    list_filter = ('rota__data',) # Filtra pela data da rota
+    date_hierarchy = 'timestamp'
+
+@admin.register(EventoColeta)
+class EventoColetaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'item_coleta', 'rota', 'evento', 'timestamp')
+    list_filter = ('evento', 'rota__data')
+    date_hierarchy = 'timestamp'

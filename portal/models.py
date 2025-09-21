@@ -1,10 +1,14 @@
 # portal/models.py
+
+import secrets
 from django.db import models
 from django.db.models import Sum
 from django.contrib.auth.models import User
 
-# NOVA CLASSE MOTORISTA
+# NOVA CLASSE MOTORISTA (MOVIDA PARA CIMA)
 class Motorista(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID') # Adicionado para consistência
     nome = models.CharField(max_length=255, verbose_name="Nome do Motorista")
     telefone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Telefone")
     ativo = models.BooleanField(default=True, verbose_name="Ativo")
@@ -16,6 +20,8 @@ class Motorista(models.Model):
         verbose_name = "Motorista"
         verbose_name_plural = "Motoristas"
         ordering = ['nome']
+
+# ... (O restante dos seus modelos existentes permanece o mesmo) ...
 
 class SD1NFItem(models.Model):
     recno = models.IntegerField(primary_key=True, db_column='R_E_C_N_O_')
@@ -138,8 +144,6 @@ class ItemColetaDetalhe(models.Model):
     )
     observacao_divergencia = models.TextField(blank=True, null=True)
 
-    # REMOVEMOS A PROPERTY DAQUI. A VIEW AGORA CUIDARÁ DE ASSOCIAR O OBJETO.
-
     class Meta:
         db_table = 'ItemColetaDetalhe'
 
@@ -196,6 +200,8 @@ class SC7PedidoItem(models.Model):
     c7_local = models.CharField(max_length=10, db_column='C7_LOCAL', blank=True, null=True)
     c7_um = models.CharField(max_length=4, db_column='C7_UM', blank=True, null=True)
     c7_obs = models.CharField(max_length=255, db_column='C7_OBS', blank=True, null=True)
+    d_e_l_e_t = models.CharField(max_length=1, db_column='D_E_L_E_T_', blank=True) # <-- CAMPO ADICIONADO AQUI
+
 
     @property
     def data_emissao_formatada(self):
@@ -221,8 +227,6 @@ class SC7PedidoItem(models.Model):
 
     def __str__(self):
         return f"Pedido {self.c7_num} - Item {self.c7_item}"
-
-# --- NOVO MODELO PARA GERENCIAR LOCAIS AVULSOS ---
 
 
 class FornecedorAvulso(models.Model):
@@ -389,3 +393,58 @@ class SYSUSR(models.Model):
 
     def __str__(self):
         return self.usr_nome
+
+
+# Modelos para o App do Motorista (CORRIGIDOS)
+class Rota(models.Model):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID') # Alterado aqui
+    motorista = models.ForeignKey(Motorista, on_delete=models.CASCADE, related_name='rotas')
+    data = models.DateField(auto_now_add=True)
+    hora_inicio = models.DateTimeField(null=True, blank=True)
+    hora_fim = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Rota de {self.motorista.nome} em {self.data}"
+
+class PontoGPS(models.Model):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
+    rota = models.ForeignKey(Rota, on_delete=models.CASCADE, related_name='pontos_gps')
+    # --- LINHAS ALTERADAS AQUI ---
+    latitude = models.DecimalField(max_digits=12, decimal_places=9)
+    longitude = models.DecimalField(max_digits=12, decimal_places=9)
+    # --- FIM DA ALTERAÇÃO ---
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"PontoGPS ({self.latitude}, {self.longitude}) em {self.timestamp}"
+
+class EventoColeta(models.Model):
+    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID') # Alterado aqui
+    item_coleta = models.ForeignKey(ItemColeta, on_delete=models.CASCADE, related_name='eventos')
+    rota = models.ForeignKey(Rota, on_delete=models.CASCADE, related_name='eventos_coleta')
+    evento = models.CharField(max_length=50, choices=[
+        ('INICIO_COLETA', 'Início da Coleta'),
+        ('FIM_COLETA', 'Fim da Coleta'),
+    ])
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Evento '{self.get_evento_display()}' para a coleta {self.item_coleta.id} em {self.timestamp}"
+    
+
+class MotoristaToken(models.Model):
+    key = models.CharField(max_length=40, primary_key=True)
+    user = models.OneToOneField(
+        User,
+        related_name='motorista_token',
+        on_delete=models.CASCADE
+    )
+    created = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = secrets.token_hex(20)
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.key

@@ -16,7 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django import forms
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from django.core.mail import EmailMessage
 from weasyprint import HTML, CSS
@@ -45,6 +45,8 @@ from .models import Motorista, ItemColeta
 from collections import defaultdict
 from itertools import groupby
 from operator import attrgetter
+from .models import Rota, PontoGPS, EventoColeta # Adicionar ao topo
+from django.db.models import F, Q
 
 # Crie um logger para a view
 logger = logging.getLogger(__name__)
@@ -263,7 +265,7 @@ def supplier_pedido_detalhes_view(request, pedido_id):
     itens_erp = SC7PedidoItem.objects.filter(
         c7_num=num_pedido_original, 
         c7_filial=filial_pedido
-    ).order_by('c7_item')
+    ).exclude(d_e_l_e_t='*').order_by('c7_item')
     
     itens_ja_disponiveis = ItemColetaDetalhe.objects.filter(
         item_coleta__pedido_liberado=pedido_liberado
@@ -524,7 +526,9 @@ def comprador_dashboard_view(request):
 
 
 def preparar_contexto_pdf(pedido_num, filial, fornecedor_erp=None):
-    itens_pedido_erp = SC7PedidoItem.objects.filter(c7_num=pedido_num, c7_filial=filial).order_by('c7_item')
+    itens_pedido_erp = SC7PedidoItem.objects.filter(
+        c7_num=pedido_num, c7_filial=filial
+    ).exclude(d_e_l_e_t='*').order_by('c7_item') # <-- Filtro adicionado aqui
     if not itens_pedido_erp.exists():
         raise Http404("Pedido não encontrado no ERP para esta filial")
 
@@ -826,7 +830,9 @@ def criar_acesso_fornecedor_view(request, fornecedor_cod):
 
 @staff_member_required
 def comprador_pedido_detalhes_view(request, pedido_num, filial):
-    itens_pedido = SC7PedidoItem.objects.filter(c7_num=pedido_num, c7_filial=filial).order_by('c7_item')
+    itens_pedido = SC7PedidoItem.objects.filter(
+        c7_num=pedido_num, c7_filial=filial
+    ).exclude(d_e_l_e_t='*').order_by('c7_item') # <-- Filtro adicionado aqui
     if not itens_pedido.exists():
         raise Http404("Pedido não encontrado")
 
@@ -913,7 +919,11 @@ def comprador_historico_view(request):
     filtro_fornecedor_id = request.GET.get('fornecedor', '')
     filtro_pedido_num = request.GET.get('pedido', '')
     filtro_data_liberacao = request.GET.get('data_liberacao', '')
-    filtro_status = request.GET.get('status', '') # Novo filtro de status
+    filtro_status = request.GET.get('status', '') # Filtro de status existente
+
+    # NOVOS FILTROS ADICIONADOS
+    filtro_data_disponibilidade = request.GET.get('data_disponibilidade_coleta', '')
+    filtro_status_coleta = request.GET.get('status_coleta', '')
 
     historico_qs = PedidoLiberado.objects.select_related(
         'fornecedor_usuario'
@@ -929,6 +939,13 @@ def comprador_historico_view(request):
         historico_qs = historico_qs.filter(data_liberacao_portal__date=filtro_data_liberacao)
     if filtro_status: # Aplicando o filtro de status
         historico_qs = historico_qs.filter(status=filtro_status)
+
+    # LÓGICA PARA NOVOS FILTROS
+    if filtro_data_disponibilidade:
+        historico_qs = historico_qs.filter(coletas__data_disponibilidade=filtro_data_disponibilidade)
+        
+    if filtro_status_coleta:
+        historico_qs = historico_qs.filter(coletas__status_coleta=filtro_status_coleta)
 
     # Adicionando anotações para a data de coleta e o status mais recente
     historico_qs = historico_qs.annotate(
@@ -975,12 +992,15 @@ def comprador_historico_view(request):
         'pedidos_historico_page_obj': pedidos_historico_page_obj,
         'per_page': per_page,
         'fornecedores': fornecedores_com_pedidos,
-        'status_choices': PedidoLiberado.STATUS_CHOICES, # Enviando as opções de status para o template
+        'status_choices': PedidoLiberado.STATUS_CHOICES,
+        'status_coleta_choices': ItemColeta.STATUS_COLETA_CHOICES, # ENVIANDO OPÇÕES PARA O TEMPLATE
         'filtros': {
             'fornecedor': filtro_fornecedor_id,
             'pedido': filtro_pedido_num,
             'data_liberacao': filtro_data_liberacao,
-            'status': filtro_status, # Enviando o valor do filtro atual
+            'status': filtro_status,
+            'data_disponibilidade_coleta': filtro_data_disponibilidade, # ENVIANDO VALOR ATUAL
+            'status_coleta': filtro_status_coleta, # ENVIANDO VALOR ATUAL
         },
         'stats_historico': stats_historico,
     }
@@ -990,7 +1010,6 @@ def comprador_historico_view(request):
 @staff_member_required
 def coleta_dashboard_view(request):
     if request.method == 'POST':
-        # ... (Toda a sua lógica de POST permanece aqui, inalterada)
         coleta_id = request.POST.get('coleta_id')
         if not coleta_id:
             messages.error(request, "Erro: Ação inválida. O ID da coleta não foi encontrado no formulário.")
@@ -1034,7 +1053,6 @@ def coleta_dashboard_view(request):
         query_string = request.GET.urlencode()
         return redirect(f"{reverse('portal:coleta_dashboard')}?{query_string}")
 
-    # --- LÓGICA DE FILTROS E BUSCA (GET) ---
     filtro_fornecedor_id = request.GET.get('fornecedor', '')
     filtro_data_disp = request.GET.get('data_disponibilidade', '')
     filtro_status = request.GET.get('status', '')
@@ -1061,7 +1079,6 @@ def coleta_dashboard_view(request):
 
     todas_as_coletas = list(base_coletas_qs)
     
-    # Otimização para buscar dados do ERP necessários em poucas queries
     codigos_fornecedores_necessarios = {
         c.pedido_liberado.fornecedor_usuario.codigo_externo.strip()
         for c in todas_as_coletas if c.pedido_liberado and c.pedido_liberado.fornecedor_usuario.codigo_externo
@@ -1071,7 +1088,6 @@ def coleta_dashboard_view(request):
     recnos_itens_necessarios = {det.item_erp_recno for col in todas_as_coletas for det in col.detalhes.all()}
     mapa_itens_erp = {item.recno: item for item in SC7PedidoItem.objects.filter(recno__in=recnos_itens_necessarios)}
 
-    # Adicionar os dados do ERP aos objetos de coleta em memória
     for coleta in todas_as_coletas:
         coleta.display_nome_fornecedor = "N/A"
         coleta.display_municipio = "N/A"
@@ -1092,17 +1108,34 @@ def coleta_dashboard_view(request):
             except FornecedorAvulso.DoesNotExist:
                 pass
         
-        # Esta é a linha que causava o erro. Agora ela vai funcionar corretamente.
         for detalhe in coleta.detalhes.all():
             detalhe.item_erp = mapa_itens_erp.get(detalhe.item_erp_recno)
 
-    # Agrupando para o Kanban
-    coletas_por_data = defaultdict(list)
-    for coleta in sorted(todas_as_coletas, key=lambda c: (c.data_agendada is not None, -c.data_agendada.toordinal() if c.data_agendada else 0, c.ordem_visita)):
-        data_chave = coleta.data_agendada or "Sem Data"
-        coletas_por_data[data_chave].append(coleta)
+    coletas_por_dia = defaultdict(list)
+    coletas_por_semana = defaultdict(list)
+    coletas_por_mes = defaultdict(list)
+    
+    today = date.today()
 
-    # Populando os filtros
+    for coleta in sorted(todas_as_coletas, key=lambda c: (c.data_agendada is not None, -c.data_agendada.toordinal() if c.data_agendada else 0, c.ordem_visita)):
+        if coleta.data_agendada:
+            if coleta.data_agendada == today:
+                coletas_por_dia['Hoje'].append(coleta)
+            else:
+                coletas_por_dia[coleta.data_agendada].append(coleta)
+
+            year, week_num, _ = coleta.data_agendada.isocalendar()
+            start_of_week = date.fromisocalendar(year, week_num, 1)
+            end_of_week = start_of_week + timedelta(days=6)
+            week_key = f"Semana {week_num} ({start_of_week.strftime('%d/%m')} - {end_of_week.strftime('%d/%m')})"
+            coletas_por_semana[week_key].append(coleta)
+
+            month_key = coleta.data_agendada.strftime('%B de %Y').capitalize()
+            coletas_por_mes[month_key].append(coleta)
+        else:
+            coletas_por_dia['Sem Data'].append(coleta)
+
+
     fornecedores_para_filtro = FornecedorUsuario.objects.filter(pedidoliberado__coletas__isnull=False).distinct().order_by('nome_fornecedor')
     motoristas = Motorista.objects.filter(ativo=True).order_by('nome')
     municipios_erp = SA2Fornecedor.objects.values_list('a2_mun', flat=True).distinct()
@@ -1110,7 +1143,9 @@ def coleta_dashboard_view(request):
     todos_municipios = sorted(list(set([m.strip() for m in municipios_erp if m] + [m.strip() for m in municipios_avulsos if m])))
 
     context = {
-        'coletas_por_data': dict(coletas_por_data),
+        'coletas_por_dia': dict(coletas_por_dia),
+        'coletas_por_semana': dict(coletas_por_semana),
+        'coletas_por_mes': dict(coletas_por_mes),
         'fornecedores': fornecedores_para_filtro,
         'status_choices': ItemColeta.STATUS_COLETA_CHOICES,
         'prioridade_choices': ItemColeta.PRIORIDADE_CHOICES,
@@ -1129,6 +1164,17 @@ def coleta_dashboard_view(request):
 def coleta_conferencia_view(request, coleta_id):
     coleta = get_object_or_404(ItemColeta, id=coleta_id)
     detalhes_coleta = coleta.detalhes.all()
+
+    # --- INÍCIO DA CORREÇÃO ---
+    # Adicione este bloco para carregar as informações dos produtos
+    recnos_itens = [det.item_erp_recno for det in detalhes_coleta]
+    itens_erp_map = {
+        item.recno: item for item in SC7PedidoItem.objects.filter(recno__in=recnos_itens)
+    }
+
+    for detalhe in detalhes_coleta:
+        detalhe.item_erp = itens_erp_map.get(detalhe.item_erp_recno)
+    # --- FIM DA CORREÇÃO ---
 
     if request.method == 'POST':
         houve_divergencia = False
@@ -1280,6 +1326,9 @@ def relatorios_view(request):
             return redirect(f"{reverse('portal:gerar_divergencias')}?{params}")
         elif tipo == 'desempenho':
             return redirect(f"{reverse('portal:gerar_desempenho')}?{params}")
+        # LINHA CORRIGIDA/ADICIONADA:
+        elif tipo == 'pendencias_embarque':
+            return redirect(f"{reverse('portal:gerar_pendencias_embarque')}?{params}")
         else:
             messages.error(request, "Tipo de relatório inválido.")
     
@@ -1330,29 +1379,42 @@ def gerar_romaneio_view(request):
 
     coletas_por_fornecedor = {}
 
-    # Adicionado para buscar todos os recnos de uma vez
     recnos_necessarios = {det.item_erp_recno for coleta in coletas_agendadas for det in coleta.detalhes.all()}
     mapa_itens_erp = {item.recno: item for item in SC7PedidoItem.objects.filter(recno__in=recnos_necessarios)}
 
+    filiais_necessarias = {
+        coleta.pedido_liberado.numero_pedido.split('-')[1].strip()
+        for coleta in coletas_agendadas if coleta.pedido_liberado and '-' in coleta.pedido_liberado.numero_pedido
+    }
+    mapa_empresas = {
+        empresa.m0_codfil.strip(): empresa 
+        for empresa in SYSCompany.objects.filter(m0_codfil__in=filiais_necessarias)
+    }
+
+
     for coleta in coletas_agendadas:
-        # Adicionado para popular os detalhes do item do ERP
         for detalhe in coleta.detalhes.all():
-            detalhe.item_erp = mapa_itens_erp.get(detalhe.item_erp_recno)
+            detalhe.item_erp_info = mapa_itens_erp.get(detalhe.item_erp_recno)
 
         fornecedor_info = { 'nome': 'N/A', 'endereco': 'N/A', 'municipio': 'N/A', 'telefone': 'N/A' }
         fornecedor_key = None
+        empresa_faturamento = None
 
         if coleta.pedido_liberado:
             fornecedor_portal = coleta.pedido_liberado.fornecedor_usuario
             fornecedor_key = f"portal_{fornecedor_portal.id}"
             try:
-                # LINHA CORRIGIDA AQUI:
                 fornecedor_erp = SA2Fornecedor.objects.filter(a2_cod=fornecedor_portal.codigo_externo.strip()).first()
                 if fornecedor_erp:
                     fornecedor_info['nome'] = fornecedor_erp.a2_nome
                     fornecedor_info['endereco'] = fornecedor_erp.a2_end
                     fornecedor_info['municipio'] = fornecedor_erp.a2_mun
                     fornecedor_info['telefone'] = fornecedor_erp.a2_tel
+                
+                if '-' in coleta.pedido_liberado.numero_pedido:
+                    filial_pedido = coleta.pedido_liberado.numero_pedido.split('-')[1]
+                    empresa_faturamento = mapa_empresas.get(filial_pedido.strip())
+
             except SA2Fornecedor.DoesNotExist:
                 fornecedor_info['nome'] = fornecedor_portal.nome_fornecedor
         else:
@@ -1369,12 +1431,9 @@ def gerar_romaneio_view(request):
         if fornecedor_key not in coletas_por_fornecedor:
             coletas_por_fornecedor[fornecedor_key] = {
                 'fornecedor': fornecedor_info,
-                'coletas': []
+                'coletas': [],
+                'empresa_faturamento': empresa_faturamento
             }
-
-        # Adicionei esta parte para anexar as informações do ERP
-        for detalhe in coleta.detalhes.all():
-            detalhe.item_erp_info = mapa_itens_erp.get(detalhe.item_erp_recno)
 
         coletas_por_fornecedor[fornecedor_key]['coletas'].append(coleta)
 
@@ -1523,6 +1582,46 @@ def gerar_desempenho_view(request):
         'data_fim': data_fim,
     }
     return render(request, 'portal/relatorio_desempenho_py.html', context)
+
+
+@staff_member_required
+def gerar_pendencias_embarque_view(request):
+    data_inicio_str = request.GET.get('data_inicio')
+    data_fim_str = request.GET.get('data_fim')
+    fornecedor_id = request.GET.get('fornecedor')
+    municipio = request.GET.get('municipio')
+
+    coletas_pendentes = ItemColeta.objects.filter(
+        status_coleta='PENDENTE'
+    ).select_related('pedido_liberado__fornecedor_usuario').order_by('data_disponibilidade')
+
+    if data_inicio_str and data_fim_str:
+        data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+        data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+        coletas_pendentes = coletas_pendentes.filter(data_disponibilidade__range=[data_inicio, data_fim])
+    
+    if fornecedor_id:
+        coletas_pendentes = coletas_pendentes.filter(
+            Q(pedido_liberado__fornecedor_usuario_id=fornecedor_id) | 
+            Q(fornecedor_avulso=FornecedorUsuario.objects.get(id=fornecedor_id).nome_fornecedor)
+        )
+
+    if municipio:
+        codigos_fornecedores_erp = list(SA2Fornecedor.objects.filter(a2_mun=municipio).values_list('a2_cod', flat=True))
+        fornecedor_usuario_ids = list(FornecedorUsuario.objects.filter(codigo_externo__in=codigos_fornecedores_erp).values_list('id', flat=True))
+        nomes_fornecedores_avulsos = list(FornecedorAvulso.objects.filter(municipio=municipio).values_list('nome', flat=True))
+
+        coletas_pendentes = coletas_pendentes.filter(
+            Q(pedido_liberado__fornecedor_usuario_id__in=fornecedor_usuario_ids) |
+            Q(fornecedor_avulso__in=nomes_fornecedores_avulsos)
+        )
+
+    context = {
+        'coletas_pendentes': coletas_pendentes,
+        'data_inicio': data_inicio_str,
+        'data_fim': data_fim_str,
+    }
+    return render(request, 'portal/relatorio_pendencias_embarque.html', context)
 
 @staff_member_required
 def gerenciar_locais_avulsos_view(request):
@@ -1738,3 +1837,62 @@ def atualizar_ordem_coleta(request):
     
 
     return render(request, 'portal/relatorio_cotacoes_condicao.html', context)
+
+@staff_member_required
+def rota_mapa_view(request, rota_id):
+    rota = get_object_or_404(Rota.objects.prefetch_related('pontos_gps', 'eventos_coleta__item_coleta__pedido_liberado__fornecedor_usuario'), id=rota_id)
+
+    # --- CORREÇÃO APLICADA AQUI ---
+    # Convertemos os Decimals para floats para garantir o ponto decimal.
+    pontos_gps = [
+        {
+            "latitude": float(p.latitude),
+            "longitude": float(p.longitude),
+            "timestamp": p.timestamp
+        }
+        for p in rota.pontos_gps.all()
+    ]
+
+    eventos = []
+    # Só processa eventos se houver pontos de GPS para lhes dar uma localização
+    if pontos_gps:
+        # Usamos um loop para construir os dados dos eventos de forma segura
+        for evento in rota.eventos_coleta.all():
+            fornecedor_nome = "Coleta Avulsa" # Valor padrão
+            if evento.item_coleta.pedido_liberado:
+                fornecedor_nome = evento.item_coleta.pedido_liberado.fornecedor_usuario.nome_fornecedor
+            elif evento.item_coleta.fornecedor_avulso:
+                fornecedor_nome = evento.item_coleta.fornecedor_avulso
+            
+            # Encontra o ponto de GPS mais próximo do evento no tempo
+            ponto_mais_proximo = min(
+                pontos_gps,
+                key=lambda ponto: abs(ponto['timestamp'] - evento.timestamp)
+            )
+
+            eventos.append({
+                "fornecedor_nome": fornecedor_nome,
+                "evento": evento.evento,
+                "timestamp": evento.timestamp,
+                "latitude": float(ponto_mais_proximo['latitude']),
+                "longitude": float(ponto_mais_proximo['longitude'])
+            })
+
+    context = {
+        'rota': rota,
+        'pontos_gps_json': json.dumps(pontos_gps, default=str),
+        'eventos_json': json.dumps(eventos, default=str)
+    }
+    return render(request, 'portal/rota_mapa.html', context)
+
+@staff_member_required
+def acompanhamento_rotas_view(request):
+    # Busca todas as rotas para a data de hoje
+    hoje = date.today()
+    rotas_do_dia = Rota.objects.filter(data=hoje).select_related('motorista').order_by('-hora_inicio')
+
+    context = {
+        'rotas': rotas_do_dia,
+        'active_menu': 'acompanhamento' # Para destacar o menu
+    }
+    return render(request, 'portal/acompanhamento_rotas.html', context)

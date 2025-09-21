@@ -1,0 +1,45 @@
+{% extends "portal/base_interno.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Acompanhamento de Rotas - {% now "d/m/Y" %}</h2>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="thead-light">
+            <tr>
+                <th>Motorista</th>
+                <th>Início da Rota</th>
+                <th>Fim da Rota</th>
+                <th>Status</th>
+                <th style="width: 15%;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rota in rotas %}
+            <tr>
+                <td>{{ rota.motorista.nome }}</td>
+                <td>{{ rota.hora_inicio|date:"H:i:s" }}</td>
+                <td>{{ rota.hora_fim|date:"H:i:s"|default:"--" }}</td>
+                <td>
+                    {% if rota.hora_fim %}
+                        <span class="status-badge" style="background-color: #6c757d;">Finalizada</span>
+                    {% else %}
+                        <span class="status-badge" style="background-color: #05B540;">Em Andamento</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'portal:rota_mapa' rota.id %}" class="btn btn-info" target="_blank">Ver Rota no Mapa</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center" style="padding: 2em;">Nenhuma rota iniciada hoje.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

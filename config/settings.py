@@ -20,7 +20,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = 'django-insecure-4+e#^n^o%buivlf6m%&gt*dep!otw44+jhcibrw!y3^%o577kw'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # Adicione seu domínio aqui
 ALLOWED_HOSTS = ['172.16.1.223', 'localhost', '127.0.0.1', 'logistica.reunidaspontal.com.br']
@@ -42,11 +42,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'portal',
+    'api',
+    
 ]
 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Adicione a linha da WhiteNoise aqui
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -179,16 +183,4 @@ STATICFILES_DIRS = [
 
 # Pasta para onde o Nginx irá olhar para encontrar os arquivos.
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    # Adicione a linha abaixo
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
 

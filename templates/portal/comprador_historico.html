@@ -170,16 +170,32 @@
                 <input type="date" name="data_liberacao" id="data_liberacao" value="{{ filtros.data_liberacao }}" onchange="this.form.submit()">
             </div>
             <div class="filtro-item">
-                <label for="status">Status no Portal</label>
-                <select name="status" id="status" onchange="this.form.submit()">
-                    <option value="">-- Todos --</option>
-                    {% for key, value in status_choices %}
-                        <option value="{{ key }}" {% if key == filtros.status %}selected{% endif %}>{{ value }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <a href="{% url 'portal:comprador_historico' %}" class="btn btn-limpar">Limpar Filtros</a>
-        </form>
+        <label for="status">Status no Portal</label>
+        <select name="status" id="status" onchange="this.form.submit()">
+            <option value="">-- Todos --</option>
+            {% for key, value in status_choices %}
+                <option value="{{ key }}" {% if key == filtros.status %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filtro-item">
+        <label for="data_disponibilidade_coleta">Data Disponibilidade</label>
+        <input type="date" name="data_disponibilidade_coleta" id="data_disponibilidade_coleta" value="{{ filtros.data_disponibilidade_coleta }}" onchange="this.form.submit()">
+    </div>
+
+    <div class="filtro-item">
+        <label for="status_coleta">Status da Coleta</label>
+        <select name="status_coleta" id="status_coleta" onchange="this.form.submit()">
+            <option value="">-- Todos --</option>
+            {% for key, value in status_coleta_choices %}
+                <option value="{{ key }}" {% if key == filtros.status_coleta %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <a href="{% url 'portal:comprador_historico' %}" class="btn btn-limpar">Limpar Filtros</a>
+</form>
 
         <table>
     <thead>

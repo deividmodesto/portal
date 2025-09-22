@@ -47,6 +47,10 @@ from itertools import groupby
 from operator import attrgetter
 from .models import Rota, PontoGPS, EventoColeta # Adicionar ao topo
 from django.db.models import F, Q
+from .tasks import enviar_email_novo_acesso_task, enviar_email_liberacao_pedido_task # IMPORTA AS TAREFAS
+from .utils import preparar_contexto_pdf
+
+
 
 # Crie um logger para a view
 logger = logging.getLogger(__name__)
@@ -141,7 +145,6 @@ def redefinir_senha_view(request):
             # Envia e-mail com a nova senha
             contexto_email = {
                 'nome_fornecedor': fornecedor.nome_fornecedor,
-                'cnpj': fornecedor.cnpj,
                 'nova_senha': nova_senha,
             }
             corpo_email = render_to_string('portal/email/redefinir_senha.txt', contexto_email)
@@ -179,28 +182,30 @@ def dashboard_view(request):
         return redirect('portal:comprador_dashboard')
     try:
         fornecedor = FornecedorUsuario.objects.get(cnpj=request.user.username)
-        pedidos = PedidoLiberado.objects.filter(fornecedor_usuario=fornecedor).order_by('data_emissao')
+        
+        # Inicia a busca por pedidos
+        pedidos = PedidoLiberado.objects.filter(fornecedor_usuario=fornecedor).order_by('-data_liberacao_portal')
 
-        # Prepara os pedidos para exibição correta no template
+        # Pega o termo de busca da URL (ex: ?busca=12345)
+        termo_busca = request.GET.get('busca', '')
+        if termo_busca:
+            pedidos = pedidos.filter(numero_pedido__icontains=termo_busca)
+
+        # Prepara os pedidos para exibição
         for pedido in pedidos:
             if not pedido.data_visualizacao:
                 pedido.data_visualizacao = timezone.now()
                 pedido.save(update_fields=['data_visualizacao'])
-            
-            try:
-                pedido.numero_pedido_display = pedido.numero_pedido.split('-')[0]
-            except:
-                pedido.numero_pedido_display = pedido.numero_pedido
-
+        
         context = {
             'nome_fornecedor': fornecedor.nome_fornecedor,
-            'pedidos': pedidos
+            'pedidos': pedidos,
+            'termo_busca': termo_busca # Envia o termo de volta para o template
         }
         return render(request, 'portal/dashboard.html', context)
     except FornecedorUsuario.DoesNotExist:
         logout(request)
         return redirect('portal:login')
-
 
 @login_required
 def logout_view(request):
@@ -260,13 +265,13 @@ def supplier_pedido_detalhes_view(request, pedido_id):
         num_pedido_original, filial_pedido = pedido_liberado.numero_pedido.split('-')
     except ValueError:
         num_pedido_original = pedido_liberado.numero_pedido
-        filial_pedido = '01' 
+        filial_pedido = '01'
 
     itens_erp = SC7PedidoItem.objects.filter(
-        c7_num=num_pedido_original, 
+        c7_num=num_pedido_original,
         c7_filial=filial_pedido
     ).exclude(d_e_l_e_t='*').order_by('c7_item')
-    
+
     itens_ja_disponiveis = ItemColetaDetalhe.objects.filter(
         item_coleta__pedido_liberado=pedido_liberado
     ).values('item_erp_recno').annotate(total_disponivel=Sum('quantidade_disponivel'))
@@ -274,8 +279,14 @@ def supplier_pedido_detalhes_view(request, pedido_id):
 
     itens_para_template = []
     total_pendente_geral = Decimal('0.0')
+    # --- NOVAS VARIÁVEIS PARA O CÁLCULO DO PROGRESSO ---
+    total_pedido_qtd = Decimal('0.0')
+    total_disponivel_qtd = Decimal('0.0')
+
     for item_erp in itens_erp:
+        total_pedido_qtd += Decimal(str(item_erp.c7_quant))
         disponivel = mapa_disponiveis.get(item_erp.recno, 0)
+        total_disponivel_qtd += Decimal(str(disponivel))
         pendente = Decimal(str(item_erp.c7_quant)) - Decimal(str(disponivel))
         total_pendente_geral += pendente
         itens_para_template.append({
@@ -283,6 +294,11 @@ def supplier_pedido_detalhes_view(request, pedido_id):
             'disponivel': disponivel,
             'pendente': pendente
         })
+
+    # --- LÓGICA PARA CALCULAR O PERCENTUAL ---
+    percentual_atendido = 0
+    if total_pedido_qtd > 0:
+        percentual_atendido = round((total_disponivel_qtd / total_pedido_qtd) * 100)
 
     if request.method == 'POST':
         data_disp = request.POST.get('data_disponibilidade')
@@ -336,7 +352,13 @@ def supplier_pedido_detalhes_view(request, pedido_id):
     context = {
         'pedido': pedido_liberado,
         'itens': itens_para_template,
-        'coletas_anteriores': coletas_anteriores
+        'coletas_anteriores': coletas_anteriores,
+        # --- NOVO CONTEXTO PARA O PROGRESSO ---
+        'progresso': {
+            'total_pedido': total_pedido_qtd,
+            'total_disponivel': total_disponivel_qtd,
+            'percentual': percentual_atendido,
+        }
     }
     return render(request, 'portal/supplier_pedido_detalhes.html', context)
 
@@ -525,114 +547,6 @@ def comprador_dashboard_view(request):
     return render(request, 'portal/comprador_dashboard.html', context)
 
 
-def preparar_contexto_pdf(pedido_num, filial, fornecedor_erp=None):
-    itens_pedido_erp = SC7PedidoItem.objects.filter(
-        c7_num=pedido_num, c7_filial=filial
-    ).exclude(d_e_l_e_t='*').order_by('c7_item') # <-- Filtro adicionado aqui
-    if not itens_pedido_erp.exists():
-        raise Http404("Pedido não encontrado no ERP para esta filial")
-
-    pedido_erp = itens_pedido_erp.first()
-    
-    try:
-        # CORREÇÃO: Altera .get() para .filter().first() para evitar erro de múltiplos resultados.
-        empresa_emitente = SYSCompany.objects.filter(m0_codfil=pedido_erp.c7_filial.strip()).first()
-    except SYSCompany.DoesNotExist:
-        empresa_emitente = None
-
-    if not fornecedor_erp:
-        fornecedor_cod = pedido_erp.c7_fornece.strip()
-        try:
-            fornecedor_erp = SA2Fornecedor.objects.filter(a2_cod=fornecedor_cod.strip()).first()
-
-        except SA2Fornecedor.DoesNotExist:
-            fornecedor_erp = None
-    
-    try:
-        condicao_pagamento = SE4.objects.get(e4_codigo=pedido_erp.c7_cond.strip())
-        desc_cond_pagamento = condicao_pagamento.e4_descri
-    except SE4.DoesNotExist:
-        desc_cond_pagamento = pedido_erp.c7_cond or "Não especificada"
-
-    # Lógica para obter a aprovação do pedido
-    aprovacoes_pedido = SCR010Aprovacao.objects.filter(
-        cr_filial=filial, 
-        cr_num=pedido_num
-    ).order_by('cr_user') # CORRIGIDO: de 'cr_aprov' para 'cr_user'
-
-    # Busca os nomes dos aprovadores em uma única consulta
-    # AQUI ESTÁ A MUDANÇA: GARANTINDO QUE OS IDS ESTÃO SEM ESPAÇOS
-    aprovador_ids = [aprovacao.cr_user.strip() for aprovacao in aprovacoes_pedido] # CORRIGIDO: de 'aprovacao.cr_aprov' para 'aprovacao.cr_user'
-    aprovadores_map = {u.usr_id.strip(): u.usr_nome.strip() for u in SYSUSR.objects.filter(usr_id__in=aprovador_ids)}
-
-    status_aprovacao_map = {
-        '01': 'Aguardando nível anterior',
-        '02': 'Pendente',
-        '03': 'Liberado',
-        '04': 'Bloqueado',
-        '05': 'Liberado por outro aprovador',
-        '06': 'Rejeitado',
-        '07': 'Rejeitado/Bloqueado por outro aprovador'
-    }
-
-    aprovacoes_para_template = []
-    for aprovacao in aprovacoes_pedido:
-        aprovacoes_para_template.append({
-            'aprovador': aprovadores_map.get(aprovacao.cr_user.strip(), "Aprovador não encontrado"),
-            'status': status_aprovacao_map.get(aprovacao.cr_status.strip(), "Status desconhecido")
-        })
-
-    num_sc = pedido_erp.c7_numsc.strip()
-    obs_sc = "N/A"
-    data_necessidade = "N/A"
-    try:
-        # CORREÇÃO: Altera .get() para .filter().first() para evitar erro de múltiplos resultados.
-        solicitacao_compra = SC1.objects.filter(c1_filial=pedido_erp.c7_filial, c1_num=num_sc).first()
-        if solicitacao_compra:
-            obs_sc = solicitacao_compra.c1_obs
-            if solicitacao_compra.c1_datprf and len(solicitacao_compra.c1_datprf) == 8:
-                ano = solicitacao_compra.c1_datprf[0:4]
-                mes = solicitacao_compra.c1_datprf[4:6]
-                dia = solicitacao_compra.c1_datprf[6:8]
-                data_necessidade = f"{dia}/{mes}/{ano}"
-    except SC1.DoesNotExist:
-        pass
-
-    status_map = {'B': 'Bloqueado', 'L': 'Liberado', 'R': 'Reprovado'}
-    status_pedido = status_map.get(pedido_erp.c7_conapro.strip(), 'Não Definido')
-    status_class = status_pedido.replace(' ', '-')
-
-    total_produtos = sum(item.c7_total for item in itens_pedido_erp)
-    total_ipi = sum(item.c7_ipi for item in itens_pedido_erp)
-    total_frete = sum(item.c7_frete for item in itens_pedido_erp)
-    total_desconto = sum(item.c7_vldesc for item in itens_pedido_erp)
-    total_geral = (total_produtos + total_ipi + total_frete) - total_desconto
-
-    logo_base64 = get_logo_base64()
-
-    contexto = {
-        'itens_pedido': itens_pedido_erp,
-        'info_geral': pedido_erp,
-        'empresa_emitente': empresa_emitente,
-        'fornecedor': fornecedor_erp,
-        'desc_cond_pagamento': desc_cond_pagamento,
-        'obs_solicitacao_compra': obs_sc,
-        'data_necessidade': data_necessidade,
-        'status_pedido': status_pedido,
-        'status_class': status_class,
-        'logo_base64': logo_base64,
-        'totais': {
-            'produtos': total_produtos,
-            'ipi': total_ipi,
-            'frete': total_frete,
-            'desconto': total_desconto,
-            'geral': total_geral,
-        },
-        # Adicione a lista de aprovações ao contexto
-        'aprovacoes': aprovacoes_para_template,
-    }
-    return contexto
-
 
 @staff_member_required
 def liberar_pedido_view(request, pedido_num, filial):
@@ -658,78 +572,50 @@ def liberar_pedido_view(request, pedido_num, filial):
                 messages.error(request, "Fornecedor não encontrado no ERP.")
                 return redirect('portal:comprador_dashboard')
 
+            senha_provisoria = get_random_string(10)
             fornecedor_portal, created = FornecedorUsuario.objects.get_or_create(
                 cnpj=fornecedor_erp.a2_cgc.strip(),
                 defaults={
                     'email': fornecedor_erp.a2_email.strip(),
                     'nome_fornecedor': fornecedor_erp.a2_nome.strip(),
                     'codigo_externo': fornecedor_erp.a2_cod.strip(),
-                    'password': get_random_string(10)
+                    'password': senha_provisoria
                 }
             )
 
             if created:
-                contexto_email = {
-                    'nome_fornecedor': fornecedor_erp.a2_nome.strip(),
-                    'cnpj': fornecedor_erp.a2_cgc.strip(),
-                    'senha': fornecedor_portal.password,
-                }
-                corpo_email = render_to_string('portal/email/novo_acesso.txt', contexto_email)
-                send_mail(
-                    subject='Seu Acesso ao Portal de Coletas',
-                    message=corpo_email,
-                    from_email=None,
-                    recipient_list=[fornecedor_erp.a2_email.strip()],
-                    fail_silently=False,
-                )
+                enviar_email_novo_acesso_task.delay(fornecedor_portal.id, senha_provisoria)
                 messages.success(request, f"Novo acesso criado para {fornecedor_erp.a2_nome.strip()} (CNPJ: {fornecedor_erp.a2_cgc.strip()}).")
 
             composite_key = f"{pedido_num}-{filial}"
             if PedidoLiberado.objects.filter(numero_pedido=composite_key).exists():
                  messages.warning(request, f"O Pedido Nº {pedido_num} ({filial}) já foi liberado.")
                  return redirect('portal:comprador_dashboard')
-
-            contexto_pdf = preparar_contexto_pdf(pedido_num, filial, fornecedor_erp=fornecedor_erp)
             
-            emails_to_send = [
-                email for email in [fornecedor_portal.email] + list(fornecedor_portal.emails_adicionais.values_list('email', flat=True))
-                if email and '@' in email and '.' in email
-            ]
+            info_geral_pedido = SC7PedidoItem.objects.filter(c7_num=pedido_num, c7_filial=filial).first()
+            if not info_geral_pedido:
+                raise Http404("Item de pedido não encontrado para obter a data de emissão.")
 
-            if not emails_to_send:
-                raise ValueError("Nenhum e-mail de fornecedor válido encontrado para enviar a notificação.")
-
-            html_string = render_to_string('portal/pedido_compra_pdf.html', contexto_pdf)
-            pdf_file = HTML(string=html_string).write_pdf()
-            
-            PedidoLiberado.objects.create(
+            pedido_liberado = PedidoLiberado.objects.create(
                 numero_pedido=composite_key,
                 fornecedor_usuario=fornecedor_portal,
-                data_emissao=contexto_pdf['info_geral'].c7_emissao,
+                data_emissao=info_geral_pedido.c7_emissao,
                 status='LIBERADO'
             )
 
-            corpo_email_texto = render_to_string('portal/email/pedido_liberado.txt', {
-                'nome_fornecedor': fornecedor_portal.nome_fornecedor,
-                'numero_pedido': contexto_pdf['info_geral'].c7_num,
-            })
-            
-            email = EmailMessage(
-                subject=f'Pedido de Compra Nº {contexto_pdf["info_geral"].c7_num} Liberado',
-                body=corpo_email_texto,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=emails_to_send,
+            enviar_email_liberacao_pedido_task.delay(
+                fornecedor_id=fornecedor_portal.id,
+                pedido_id=pedido_liberado.id,
+                pedido_num=pedido_num,
+                filial=filial
             )
-            email.attach(f'Pedido_de_Compra_{contexto_pdf["info_geral"].c7_num}.pdf', pdf_file, 'application/pdf')
-            email.send(fail_silently=False)
             
-            messages.success(request, f"Pedido Nº {pedido_num} ({filial}) liberado com sucesso para {fornecedor_portal.nome_fornecedor}.")
+            messages.success(request, f"Pedido Nº {pedido_num} ({filial}) liberado com sucesso. O e-mail para {fornecedor_portal.nome_fornecedor} está sendo enviado em segundo plano.")
 
         except Exception as e:
             messages.error(request, f"Ocorreu um erro inesperado: {e}")
             
     return redirect('portal:comprador_dashboard')
-
 
 @staff_member_required
 def gerar_pedido_pdf_view(request, pedido_num, filial):

@@ -13,88 +13,97 @@
         header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
         .header-logo { height: 40px; }
         .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
-        main { padding: 2em; }
-        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5em; }
+        main { padding: 2em; max-width: 1600px; margin: auto; }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; margin-bottom: 1em;}
         nav.menu-interno { margin-left: 30px; }
         nav.menu-interno a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; }
         nav.menu-interno a:hover { color: var(--cor-alerta); }
         nav.menu-interno a.active { color: var(--cor-alerta); border-bottom-color: var(--cor-alerta); }
-        .filtros-container { background-color: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 2em; display: flex; flex-wrap: wrap; gap: 1.5em; align-items: flex-end; }
-        .filtro-item { display: flex; flex-direction: column; }
-        .filtro-item label { margin-bottom: 0.5em; font-weight: bold; color: #555; }
-        .filtro-item input, .filtro-item select { padding: 0.6em; border-radius: 4px; border: 1px solid #ccc; min-width: 180px; }
         .btn { padding: 0.6em 1.2em; border-radius: 4px; border: none; cursor: pointer; font-size: 1em; text-decoration: none; display: inline-block; }
-        .btn-filtrar { background-color: #007bff; color: white; }
-        .btn-limpar { background-color: #6c757d; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1em; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
-        th { background-color: #e9ecef; }
-        .btn-liberar { background-color: #007bff; color: white; padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.9em; width: 100%; }
-        .btn-liberar:hover { background-color: #0056b3; }
-        .btn-pdf { background-color: #6c757d; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; display: block; text-align: center; }
-        .btn-pdf:hover { background-color: #5a6268; }
-        .action-buttons { display: flex; gap: 8px; }
-        .action-buttons > * { flex: 1; }
-        .btn-criar-acesso { background-color: var(--cor-alerta); color: #012E23; padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.9em; font-weight: bold; width: 100%; }
-        .btn-criar-acesso:hover { background-color: #d89000; }
-        .texto-pendente { font-size: 0.8em; color: #6c757d; text-align: center; margin-top: 4px;}
-        .messages { padding: 0 2em; margin-top: 1em; }
-        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
-        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
-        .alert-error, .alert-warning { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
-        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5em; margin-bottom: 2em; }
+        
+        /* --- ESTILOS PARA O NOVO LAYOUT --- */
+
+        /* Barra de Estatísticas */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5em;
+            margin-bottom: 2em;
+        }
         .stat-card { background-color: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--cor-principal); }
         .stat-card h4 { margin-top: 0; color: #555; font-size: 1em; }
         .stat-card .stat-number { font-size: 2.5em; font-weight: bold; color: var(--cor-principal); }
-        .stat-card.sem-acesso { border-left-color: var(--cor-alerta); }
-        .stat-card.sem-acesso .stat-number { color: var(--cor-alerta); }
-        .stat-card.com-acesso { border-left-color: var(--cor-destaque); }
-        .stat-card.com-acesso .stat-number { color: var(--cor-destaque); }
-        .status-badge { padding: 5px 10px; border-radius: 15px; color: white; font-weight: bold; font-size: 0.8em; text-align: center; }
-        .status-L { background-color: var(--cor-destaque); }
-        .status-B { background-color: var(--cor-aviso); }
-        .status-R { background-color: #dc3545; }
         .stat-card.aprovado { border-left-color: var(--cor-destaque); }
         .stat-card.aprovado .stat-number { color: var(--cor-destaque); }
         .stat-card.bloqueado { border-left-color: var(--cor-aviso); }
         .stat-card.bloqueado .stat-number { color: var(--cor-aviso); }
-        .stat-card.reprovado { border-left-color: #dc3545; }
-        .stat-card.reprovado .stat-number { color: #dc3545; }
-        .stat-card.nao-definido { border-left-color: #6c757d; }
-        .stat-card.nao-definido .stat-number { color: #6c757d; }
-        .btn-add-email { background-color: #28a745; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; }
-        .select-filial { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; }
-
-        /* Estilos para Paginação */
-        .pagination-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 2em;
-            padding: 1em;
+        .stat-card.sem-acesso { border-left-color: var(--cor-alerta); }
+        .stat-card.sem-acesso .stat-number { color: var(--cor-alerta); }
+        
+        /* Filtros Recolhíveis */
+        .filtros-wrapper {
             background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
-        }
-        .pagination-controls a, .pagination-controls strong, .pagination-controls span {
-            padding: 8px 12px;
-            margin: 0 2px;
-            border-radius: 4px;
-            text-decoration: none;
-            color: var(--cor-principal);
-        }
-        .pagination-controls a {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2em;
             border: 1px solid #dee2e6;
         }
-        .pagination-controls a:hover {
-            background-color: #e9ecef;
+        .filtros-wrapper summary {
+            padding: 1em 1.5em;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
         }
-        .pagination-controls strong {
-            background-color: var(--cor-principal);
-            color: white;
-            border: 1px solid var(--cor-principal);
+        .filtros-wrapper summary::after {
+            content: ' ▼';
+            font-size: 0.8em;
         }
+        .filtros-wrapper[open] summary::after {
+            content: ' ▲';
+        }
+        .filtros-container {
+            padding: 1.5em;
+            border-top: 1px solid #e9ecef;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5em;
+            align-items: flex-end;
+        }
+        .filtro-item { display: flex; flex-direction: column; }
+        .filtro-item label { margin-bottom: 0.5em; font-weight: bold; color: #555; }
+        .filtro-item input, .filtro-item select { padding: 0.6em; border-radius: 4px; border: 1px solid #ccc; width: 100%; box-sizing: border-box;}
+        .filtro-actions { grid-column: -1; display: flex; gap: 1em; justify-content: flex-end;}
+
+        /* Tabela e Ações */
+        .table-container { background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #dee2e6;}
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; }
+        .status-badge { padding: 5px 10px; border-radius: 15px; color: white; font-weight: bold; font-size: 0.8em; text-align: center; }
+        .status-L { background-color: var(--cor-destaque); }
+        .status-B { background-color: var(--cor-aviso); }
+        .status-R { background-color: #dc3545; }
+        .action-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+        .action-buttons > * { flex: 1; min-width: 80px; }
+        .btn-pdf, .btn-liberar, .btn-criar-acesso, .btn-add-email { font-size: 0.9em; padding: 8px 12px; text-align: center; border-radius: 4px; }
+        .btn-liberar { background-color: #007bff; color: white; border: none; }
+        .btn-pdf { background-color: #6c757d; color: white; text-decoration: none; }
+        .btn-criar-acesso { background-color: var(--cor-alerta); color: #012E23; border: none; font-weight: bold; }
+        .btn-add-email { background-color: #28a745; color: white; text-decoration: none; }
+        .select-filial { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; }
+
+        .pagination-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 2em; }
+        .pagination-controls a, .pagination-controls strong, .pagination-controls span { padding: 8px 12px; margin: 0 2px; border-radius: 4px; text-decoration: none; color: var(--cor-principal); }
+        .pagination-controls a { border: 1px solid #dee2e6; }
+        .pagination-controls a:hover { background-color: #e9ecef; }
+        .pagination-controls strong { background-color: var(--cor-principal); color: white; border: 1px solid var(--cor-principal); }
+
+        /* Mensagens de Alerta */
+        .messages { padding: 0; margin-bottom: 1em; }
+        .alert { padding: 15px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        .alert-error, .alert-warning { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
     </style>
 </head>
 <body>
@@ -113,7 +122,6 @@
         </div>
         <div class="header-user">
             <span>Olá, {{ request.user.username }}</span> | 
-            {# CORREÇÃO APLICADA AQUI #}
             <form action="{% url 'admin:logout' %}" method="post" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit" style="background: none; border: none; color: var(--cor-alerta); cursor: pointer; text-decoration: none; font-weight: bold; padding: 0; font-family: sans-serif; font-size: 1em;">Sair</button>
@@ -130,235 +138,217 @@
         </div>
         {% endif %}
 
+        <h2>Dashboard de Compras</h2>
+
         <div class="stats-container">
+            <div class="stat-card">
+                <h4>Pedidos Pendentes</h4>
+                <div class="stat-number">{{ stats.total_pedidos }}</div>
+            </div>
             <div class="stat-card aprovado">
-                <h4>Pedidos Aprovados (L)</h4>
+                <h4>Aprovados (L)</h4>
                 <div class="stat-number">{{ stats.pedidos_aprovados }}</div>
             </div>
             <div class="stat-card bloqueado">
-                <h4>Pedidos Bloqueados (B)</h4>
+                <h4>Bloqueados (B)</h4>
                 <div class="stat-number">{{ stats.pedidos_bloqueados }}</div>
             </div>
-            <div class="stat-card reprovado">
-                <h4>Pedidos Reprovados (R)</h4>
-                <div class="stat-number">{{ stats.pedidos_reprovados }}</div>
-            </div>
-            <div class="stat-card nao-definido">
-                <h4>Não Definido</h4>
-                <div class="stat-number">{{ stats.pedidos_nao_definido }}</div>
-            </div>
-        </div>
-        <div class="stats-container">
-            <div class="stat-card">
-                <h4>Pedidos Aguardando Liberação</h4>
-                <div class="stat-number">{{ stats.total_pedidos }}</div>
-            </div>
             <div class="stat-card sem-acesso">
-                <h4>Fornecedores Sem Acesso</h4>
+                <h4>Forn. Sem Acesso</h4>
                 <div class="stat-number">{{ stats.fornecedores_sem_acesso }}</div>
             </div>
-            <div class="stat-card com-acesso">
-                <h4>Fornecedores com Acesso</h4>
-                <div class="stat-number">{{ stats.fornecedores_com_acesso }}</div>
-            </div>
         </div>
 
-        <form method="get" class="filtros-container">
-            <div class="filtro-item">
-                <label for="filial">Filial</label>
-                <select name="filial" id="filial" onchange="this.form.submit()">
-                    <option value="">-- Todas --</option>
-                    {% for filial in filiais_pendentes %}
-                        <option value="{{ filial }}" {% if filial == filtros.filial %}selected{% endif %}>
-                            {{ filial }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filtro-item">
-                <label for="fornecedor">Fornecedor</label>
-                <select name="fornecedor" id="fornecedor" onchange="this.form.submit()">
-                    <option value="">-- Todos --</option>
-                    {% for fornecedor in todos_fornecedores %}
-                        <option value="{{ fornecedor.a2_cod }}" {% if fornecedor.a2_cod == filtros.fornecedor %}selected{% endif %}>
-                            {{ fornecedor.a2_nome|truncatechars:40 }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filtro-item">
-                <label for="municipio">Município</label>
-                <select name="municipio" id="municipio" onchange="this.form.submit()">
-                    <option value="">-- Todos --</option>
-                    {% for municipio in municipios_pendentes %}
-                        <option value="{{ municipio }}" {% if municipio == filtros.municipio %}selected{% endif %}>
-                            {{ municipio }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filtro-item">
-                <label for="classe_superior">Grupo de Produto Consolidado</label>
-                <select name="classe_superior" id="classe_superior" onchange="this.form.submit()">
-                    <option value="">-- Todas --</option>
-                    {% for classe in classes_superiores %}
-                        <option value="{{ classe.cod }}" {% if classe.cod == filtros.classe_superior %}selected{% endif %}>
-                            {{ classe.desc }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filtro-item">
-                <label for="grupo_produto">Grupo de Produto Detalhado</label>
-                <select name="grupo_produto" id="grupo_produto" onchange="this.form.submit()">
-                    <option value="">-- Todos --</option>
-                    {% for grupo in grupos_de_produto %}
-                        <option value="{{ grupo.bm_grupo }}" {% if grupo.bm_grupo == filtros.grupo_produto %}selected{% endif %}>
-                            {{ grupo.bm_grupo }} - {{ grupo.bm_desc }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filtro-item">
-                <label for="pedido">Nº do Pedido</label>
-                <input type="text" name="pedido" id="pedido" value="{{ filtros.pedido }}">
-            </div>
-            <div class="filtro-item">
-                <label for="data_inicio">Data Início</label>
-                <input type="date" name="data_inicio" id="data_inicio" value="{{ filtros.data_inicio }}">
-            </div>
-            <div class="filtro-item">
-                <label for="data_fim">Data Fim</label>
-                <input type="date" name="data_fim" id="data_fim" value="{{ filtros.data_fim }}">
-            </div>
-            <div class="filtro-item">
-                <label for="status">Status</label>
-                <select name="status" id="status" onchange="this.form.submit()">
-                    <option value="">-- Todos --</option>
-                    {% for key, value in status_choices.items %}
-                        <option value="{{ key }}" {% if key == filtros.status %}selected{% endif %}>
-                            {{ value }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn btn-filtrar">Buscar Pedido</button>
-            <a href="{% url 'portal:comprador_dashboard' %}" class="btn btn-limpar">Limpar Filtros</a>
-        </form>
+        <details class="filtros-wrapper" {% if request.GET %}open{% endif %}>
+            <summary>Exibir/Ocultar Filtros</summary>
+            <form method="get" class="filtros-container">
+                <div class="filtro-item">
+                    <label for="filial">Filial</label>
+                    <select name="filial" id="filial">
+                        <option value="">-- Todas --</option>
+                        {% for filial in filiais_pendentes %}
+                            <option value="{{ filial }}" {% if filial == filtros.filial %}selected{% endif %}>{{ filial }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtro-item">
+                    <label for="fornecedor">Fornecedor</label>
+                    <select name="fornecedor" id="fornecedor">
+                        <option value="">-- Todos --</option>
+                        {% for fornecedor in todos_fornecedores %}
+                            <option value="{{ fornecedor.a2_cod }}" {% if fornecedor.a2_cod == filtros.fornecedor %}selected{% endif %}>{{ fornecedor.a2_nome|truncatechars:40 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtro-item">
+                    <label for="municipio">Município</label>
+                    <select name="municipio" id="municipio">
+                        <option value="">-- Todos --</option>
+                        {% for municipio in municipios_pendentes %}
+                            <option value="{{ municipio }}" {% if municipio == filtros.municipio %}selected{% endif %}>{{ municipio }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtro-item">
+                    <label for="classe_superior">Grupo Consolidado</label>
+                    <select name="classe_superior" id="classe_superior">
+                        <option value="">-- Todas --</option>
+                        {% for classe in classes_superiores %}
+                            <option value="{{ classe.cod }}" {% if classe.cod == filtros.classe_superior %}selected{% endif %}>{{ classe.desc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtro-item">
+                    <label for="grupo_produto">Grupo Detalhado</label>
+                    <select name="grupo_produto" id="grupo_produto">
+                        <option value="">-- Todos --</option>
+                        {% for grupo in grupos_de_produto %}
+                            <option value="{{ grupo.bm_grupo }}" {% if grupo.bm_grupo == filtros.grupo_produto %}selected{% endif %}>{{ grupo.bm_grupo }} - {{ grupo.bm_desc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtro-item">
+                    <label for="pedido">Nº do Pedido</label>
+                    <input type="text" name="pedido" id="pedido" value="{{ filtros.pedido }}">
+                </div>
+                <div class="filtro-item">
+                    <label for="data_inicio">Data Início</label>
+                    <input type="date" name="data_inicio" id="data_inicio" value="{{ filtros.data_inicio }}">
+                </div>
+                <div class="filtro-item">
+                    <label for="data_fim">Data Fim</label>
+                    <input type="date" name="data_fim" id="data_fim" value="{{ filtros.data_fim }}">
+                </div>
+                <div class="filtro-item">
+                    <label for="status">Status</label>
+                    <select name="status" id="status">
+                        <option value="">-- Todos --</option>
+                        {% for key, value in status_choices.items %}
+                            <option value="{{ key }}" {% if key == filtros.status %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtro-actions">
+                    <button type="submit" class="btn" style="background-color: var(--cor-info); color: white;">Buscar</button>
+                    <a href="{% url 'portal:comprador_dashboard' %}" class="btn" style="background-color: #6c757d; color: white;">Limpar</a>
+                </div>
+            </form>
+        </details>
 
-        <table>
-            <thead>
+        <div class="table-container">
+            <h3>Pedidos Pendentes de Liberação</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nº do Pedido</th>
+                        <th>Filial</th>
+                        <th>Emissão</th>
+                        <th>Fornecedor</th>
+                        <th>Status</th>
+                        <th style="width: 25%;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for pedido in pedidos_page_obj %}
                 <tr>
-                    <th>Nº do Pedido</th>
-                    <th>Filial</th>
-                    <th>Data de Emissão</th>
-                    <th>Fornecedor</th>
-                    <th>Status do Pedido</th>
-                    <th style="width: 25%;">Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for pedido in pedidos_page_obj %}
-            <tr>
-                <td><a href="{% url 'portal:comprador_pedido_detalhes' pedido.c7_num pedido.c7_filial %}">{{ pedido.c7_num }}</a></td>
-                <td>{{ pedido.c7_filial }}</td>
-                <td>{{ pedido.data_emissao_formatada }}</td>
-                <td>{{ pedido.nome_fornecedor }}</td>
-                <td>
-                    <span class="status-badge status-{{ pedido.c7_conapro }}">
-                        {{ pedido.status_pedido_display }}
-                    </span>
-                </td>
-                <td>
-                    {% if pedido.multiple_suppliers %}
-                        <form method="post" action="{% url 'portal:liberar_pedido' pedido.c7_num pedido.c7_filial %}" style="margin: 0;">
-                            {% csrf_token %}
-                            {% if pedido.fornecedor_tem_acesso %}
-                            <div class="action-buttons" style="margin-bottom: 8px;">
-                                <a href="{% url 'portal:gerar_pedido_pdf' pedido.c7_num pedido.c7_filial %}" class="btn-pdf" target="_blank">PDF</a>
-                                {% if pedido.fornecedor_usuario %}
-                                    <a href="{% url 'portal:adicionar_email_fornecedor' pedido.fornecedor_usuario.id %}" class="btn btn-add-email">Add E-mail</a>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                            <select name="fornecedor_recno" class="select-filial" required>
-                                <option value="">Selecione a Filial (CNPJ)</option>
-                                {% for supplier in pedido.supplier_options %}
-                                <option value="{{ supplier.recno }}">{{ supplier.a2_cgc }} - {{ supplier.a2_mun }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn-liberar">Liberar para Filial</button>
-                        </form>
-                    {% elif pedido.fornecedor_tem_acesso %}
-                        <div class="action-buttons">
-                            <a href="{% url 'portal:gerar_pedido_pdf' pedido.c7_num pedido.c7_filial %}" class="btn-pdf" target="_blank">Gerar PDF</a>
+                    <td><a href="{% url 'portal:comprador_pedido_detalhes' pedido.c7_num pedido.c7_filial %}">{{ pedido.c7_num }}</a></td>
+                    <td>{{ pedido.c7_filial }}</td>
+                    <td>{{ pedido.data_emissao_formatada }}</td>
+                    <td>{{ pedido.nome_fornecedor }}</td>
+                    <td>
+                        <span class="status-badge status-{{ pedido.c7_conapro }}">{{ pedido.status_pedido_display }}</span>
+                    </td>
+                    <td>
+                        {% if pedido.multiple_suppliers %}
                             <form method="post" action="{% url 'portal:liberar_pedido' pedido.c7_num pedido.c7_filial %}" style="margin: 0;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn-liberar">Liberar</button>
+                                {% if pedido.fornecedor_tem_acesso %}
+                                <div class="action-buttons" style="margin-bottom: 8px;">
+                                    <a href="{% url 'portal:gerar_pedido_pdf' pedido.c7_num pedido.c7_filial %}" class="btn-pdf" target="_blank">PDF</a>
+                                    {% if pedido.fornecedor_usuario %}
+                                        <a href="{% url 'portal:adicionar_email_fornecedor' pedido.fornecedor_usuario.id %}" class="btn-add-email">Add E-mail</a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                <select name="fornecedor_recno" class="select-filial" required>
+                                    <option value="">Selecione a Filial (CNPJ)</option>
+                                    {% for supplier in pedido.supplier_options %}
+                                    <option value="{{ supplier.recno }}">{{ supplier.a2_cgc }} - {{ supplier.a2_mun }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn-liberar">Liberar para Filial</button>
                             </form>
-                            {% if pedido.fornecedor_usuario %}
-                            <a href="{% url 'portal:adicionar_email_fornecedor' pedido.fornecedor_usuario.id %}" class="btn btn-add-email">Add E-mail</a>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <form method="post" action="{% url 'portal:criar_acesso_fornecedor' pedido.c7_fornece %}" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-criar-acesso">Criar Acesso</button>
-                        </form>
-                        <div class="texto-pendente">Acesso pendente</div>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 2em;">Nenhum pedido pendente encontrado com os filtros aplicados.</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                        {% elif pedido.fornecedor_tem_acesso %}
+                            <div class="action-buttons">
+                                <a href="{% url 'portal:gerar_pedido_pdf' pedido.c7_num pedido.c7_filial %}" class="btn-pdf" target="_blank">Gerar PDF</a>
+                                <form method="post" action="{% url 'portal:liberar_pedido' pedido.c7_num pedido.c7_filial %}" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-liberar">Liberar</button>
+                                </form>
+                                {% if pedido.fornecedor_usuario %}
+                                <a href="{% url 'portal:adicionar_email_fornecedor' pedido.fornecedor_usuario.id %}" class="btn-add-email">Add E-mail</a>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <form method="post" action="{% url 'portal:criar_acesso_fornecedor' pedido.c7_fornece %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-criar-acesso">Criar Acesso</button>
+                            </form>
+                            <div class="texto-pendente">Acesso pendente</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2em;">Nenhum pedido pendente encontrado com os filtros aplicados.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
 
-        <div class="pagination-controls">
-            <div class="pagination-info">
-                Página {{ pedidos_page_obj.number }} de {{ pedidos_page_obj.paginator.num_pages }}.
-                <span style="color: #6c757d; font-size: 0.9em;">({{ stats.total_pedidos }} pedidos no total)</span>
+            <div class="pagination-controls">
+                <div class="pagination-info">
+                    Página {{ pedidos_page_obj.number }} de {{ pedidos_page_obj.paginator.num_pages }}.
+                    <span style="color: #6c757d; font-size: 0.9em;">({{ stats.total_pedidos }} pedidos no total)</span>
+                </div>
+
+                <div class="pagination-links">
+                {% if pedidos_page_obj.has_previous %}
+                    <a href="?page=1&{{ request.GET.urlencode }}">&laquo; Primeira</a>
+                    <a href="?page={{ pedidos_page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a>
+                {% endif %}
+
+                {% for i in pedidos_page_obj.paginator.page_range %}
+                    {% if pedidos_page_obj.number == i %}
+                        <strong>{{ i }}</strong>
+                    {% elif i > pedidos_page_obj.number|add:'-3' and i < pedidos_page_obj.number|add:'3' %}
+                        <a href="?page={{ i }}&{{ request.GET.urlencode }}">{{ i }}</a>
+                    {% elif forloop.counter == 1 or forloop.revcounter == 1 %}
+                         <span>...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pedidos_page_obj.has_next %}
+                    <a href="?page={{ pedidos_page_obj.next_page_number }}&{{ request.GET.urlencode }}">Próxima</a>
+                    <a href="?page={{ pedidos_page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">Última &raquo;</a>
+                {% endif %}
             </div>
 
-            <div class="pagination-links">
-            {% if pedidos_page_obj.has_previous %}
-                <a href="?page=1&{{ request.GET.urlencode }}">&laquo; Primeira</a>
-                <a href="?page={{ pedidos_page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a>
-            {% endif %}
-
-            {% for i in pedidos_page_obj.paginator.page_range %}
-                {% if pedidos_page_obj.number == i %}
-                    <strong>{{ i }}</strong>
-                {% elif i > pedidos_page_obj.number|add:'-3' and i < pedidos_page_obj.number|add:'3' %}
-                    <a href="?page={{ i }}&{{ request.GET.urlencode }}">{{ i }}</a>
-                {% elif forloop.counter == 1 or forloop.revcounter == 1 %}
-                     <span>...</span>
-                {% endif %}
-            {% endfor %}
-
-            {% if pedidos_page_obj.has_next %}
-                <a href="?page={{ pedidos_page_obj.next_page_number }}&{{ request.GET.urlencode }}">Próxima</a>
-                <a href="?page={{ pedidos_page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">Última &raquo;</a>
-            {% endif %}
-        </div>
-
-            <div class="pagination-per-page">
-                <form method="get" style="display: inline-flex; align-items: center; gap: 5px;">
-                    <span>Exibir:</span>
-                    {% for key, value in request.GET.items %}
-                        {% if key != 'per_page' and key != 'page' %}
-                            <input type="hidden" name="{{ key }}" value="{{ value }}">
-                        {% endif %}
-                    {% endfor %}
-                    <select name="per_page" onchange="this.form.submit()" style="padding: 0.4em; border-radius: 4px; border: 1px solid #ccc;">
-                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
-                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
-                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
-                    </select>
-                </form>
+                <div class="pagination-per-page">
+                    <form method="get" style="display: inline-flex; align-items: center; gap: 5px;">
+                        <span>Exibir:</span>
+                        {% for key, value in request.GET.items %}
+                            {% if key != 'per_page' and key != 'page' %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                        <select name="per_page" onchange="this.form.submit()" style="padding: 0.4em; border-radius: 4px; border: 1px solid #ccc;">
+                            <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        </select>
+                    </form>
+                </div>
             </div>
         </div>
     </main>

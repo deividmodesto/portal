@@ -4,50 +4,110 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - Portal Reunidas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
             --cor-principal: #012E23;
             --cor-destaque: #05B540;  /* Verde (Totalmente Disponível) */
             --cor-alerta: #FFAA00;    /* Laranja (Não Respondido) */
             --cor-info: #007bff;      /* Azul (Parcialmente Disponível) */
-            --cor-aviso: #FF6600;
+            --cor-cinza: #6c757d;     /* Cinza (Coletado) */
+            --cor-fundo: #f0f2f5;
         }
-        body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--cor-fundo); }
         header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
         .header-logo { height: 40px; }
         .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
-        main { padding: 2em; }
-        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1em; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: middle; }
-        th { background-color: #e9ecef; }
-        .btn-detalhes { background-color: #6c757d; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; }
-        .btn-detalhes:hover { background-color: #5a6268; }
-        
-        /* --- ESTILOS PARA OS NOVOS STATUS --- */
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 15px;
-            color: white;
-            font-weight: bold;
-            font-size: 0.8em;
-            text-align: center;
+        main { padding: 2em; max-width: 1200px; margin: auto; }
+        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; color: #343a40;}
+
+        .pedidos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5em;
+            margin-top: 2em;
         }
-        .status-liberado { background-color: var(--cor-alerta); }
-        .status-parcialmente_disponivel { background-color: var(--cor-info); }
-        .status-totalmente_disponivel { background-color: var(--cor-destaque); }
-        .status-coletado { background-color: #6c757d; } /* Cinza */
+        .pedido-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            border-left: 5px solid;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .pedido-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+        }
+        .pedido-card-header {
+            padding: 1em 1.5em;
+        }
+        .pedido-card-header h3 { margin: 0; color: var(--cor-principal); }
+        .pedido-card-body {
+            padding: 1.5em;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8em;
+            font-size: 0.95em;
+        }
+        .info-line { display: flex; align-items: center; gap: 0.7em; }
+        .info-line .fa-solid { color: var(--cor-cinza); width: 16px; text-align: center; }
+
+        .pedido-card-footer {
+            background-color: #f8f9fa;
+            padding: 1em 1.5em;
+            text-align: right;
+        }
+        .btn-detalhes { background-color: var(--cor-principal); color: white; padding: 0.6em 1.2em; border-radius: 5px; text-decoration: none; font-weight: bold; }
+        .btn-detalhes:hover { background-color: #024e3a; }
+
+        /* Cores da borda baseadas no status */
+        .status-liberado { border-color: var(--cor-alerta); }
+        .status-parcialmente_disponivel { border-color: var(--cor-info); }
+        .status-totalmente_disponivel { border-color: var(--cor-destaque); }
+        .status-coletado { border-color: var(--cor-cinza); }
 
         .messages { padding: 0 2em; margin-top: 1em; }
         .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
         .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+
+        /* Estilos para a busca */
+        .busca-container { margin-bottom: 2em; }
+        .busca-container input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        
+        .pedidos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5em; }
+        .pedido-card { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; border-left: 5px solid; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .pedido-card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.12); }
+        .pedido-card-header { padding: 1em 1.5em; }
+        .pedido-card-header h3 { margin: 0; color: #012E23; }
+        .pedido-card-body { padding: 1.5em; flex-grow: 1; display: flex; flex-direction: column; gap: 0.8em; font-size: 0.95em; }
+        .info-line { display: flex; align-items: center; gap: 0.7em; }
+        .info-line .fa-solid { color: #6c757d; width: 16px; text-align: center; }
+        .pedido-card-footer { background-color: #f8f9fa; padding: 1em 1.5em; text-align: right; }
+        .btn-detalhes { background-color: #012E23; color: white; padding: 0.6em 1.2em; border-radius: 5px; text-decoration: none; font-weight: bold; }
+        .btn-detalhes:hover { background-color: #024e3a; }
+
+        .status-liberado { border-color: #FFAA00; }
+        .status-parcialmente_disponivel { border-color: #007bff; }
+        .status-totalmente_disponivel { border-color: #05B540; }
+        .status-coletado { border-color: #6c757d; }
     </style>
 </head>
 <body>
     <header>
         <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
         <div class="header-user">
-            <span>Olá, {{ nome_fornecedor }}</span> | 
+            <span>Olá, {{ nome_fornecedor }}</span> |
+            
             <form action="{% url 'portal:logout' %}" method="post" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit" style="background: none; border: none; color: var(--cor-alerta); cursor: pointer; text-decoration: none; font-weight: bold; padding: 0; font-family: sans-serif; font-size: 1em;">Sair</button>
@@ -55,49 +115,58 @@
         </div>
     </header>
 
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-            <div class="alert alert-success">
-                {{ message }}
-            </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
     <main>
         <h2>Seus Pedidos Liberados</h2>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Nº do Pedido</th>
-                    <th>Data de Emissão</th>
-                    <th>Status</th>
-                    <th style="width: 15%;">Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pedido in pedidos %}
-                <tr>
-                    <td><a href="{% url 'portal:supplier_pedido_detalhes' pedido.id %}">{{ pedido.numero_pedido }}</a></td>
-                    <td>{{ pedido.data_emissao|date:"d/m/Y" }}</td>
-                    <td>
-                        <span class="status-badge status-{{ pedido.status|lower }}">
-                            {{ pedido.get_status_display }}
-                        </span>
-                    </td>
-                    <td>
-                        <a href="{% url 'portal:supplier_pedido_detalhes' pedido.id %}" class="btn-detalhes">Gerenciar Coleta</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" style="text-align: center; padding: 2em;">Nenhum pedido liberado no momento.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="busca-container">
+            <input type="text" id="buscaPedido" onkeyup="filtrarPedidos()" placeholder="Buscar por número do pedido...">
+        </div>
+
+        <div class="pedidos-grid">
+            {% for pedido in pedidos %}
+            <div class="pedido-card status-{{ pedido.status|lower }}">
+                <div class="pedido-card-header">
+                    <h3>Pedido Nº <span class="numero-pedido">{{ pedido.numero_pedido }}</span></h3>
+                </div>
+                <div class="pedido-card-body">
+                    <div class="info-line">
+                        <i class="fa-solid fa-calendar-day"></i>
+                        <strong>Data de Emissão:</strong> {{ pedido.data_emissao|date:"d/m/Y" }}
+                    </div>
+                    <div class="info-line">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                        <strong>Status:</strong> {{ pedido.get_status_display }}
+                    </div>
+                </div>
+                <div class="pedido-card-footer">
+                    <a href="{% url 'portal:supplier_pedido_detalhes' pedido.id %}" class="btn-detalhes">Gerenciar Coleta <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+            {% empty %}
+                <p>Nenhum pedido encontrado.</p>
+            {% endfor %}
+        </div>
     </main>
+
+    <script>
+        function filtrarPedidos() {
+            const input = document.getElementById('buscaPedido');
+            const filtro = input.value.toUpperCase();
+            const grid = document.querySelector('.pedidos-grid');
+            const cards = grid.getElementsByClassName('pedido-card');
+
+            for (let i = 0; i < cards.length; i++) {
+                const numeroPedido = cards[i].querySelector('.numero-pedido');
+                if (numeroPedido) {
+                    const txtValue = numeroPedido.textContent || numeroPedido.innerText;
+                    if (txtValue.toUpperCase().indexOf(filtro) > -1) {
+                        cards[i].style.display = "";
+                    } else {
+                        cards[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>

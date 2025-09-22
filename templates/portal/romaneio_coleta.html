@@ -36,6 +36,26 @@
         
         .fornecedor-body { padding: 15px; }
         .info-pessoais p { margin: 5px 0; }
+
+        /* Estilos para a caixa de faturamento */
+        .faturamento-box {
+            background-color: #f0f8ff;
+            border: 1px solid #b0c4de;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .faturamento-box h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #012E23;
+        }
+        .faturamento-box p {
+            margin: 4px 0;
+            font-size: 9pt;
+        }
         
         .coleta-bloco {
             border-top: 1px dashed #ccc;
@@ -121,6 +141,20 @@
                 <p><strong>Telefone:</strong> {{ item_fornecedor.fornecedor.telefone }}</p>
             </div>
 
+            {% if item_fornecedor.empresa_faturamento %}
+            <div class="faturamento-box">
+                <h4>Faturar para:</h4>
+                <p><strong>Grupo Reunidas</strong></p>
+                <p><strong>(Filial: {{ item_fornecedor.empresa_faturamento.m0_filial }})</strong></p>
+                <p>
+                    {{ item_fornecedor.empresa_faturamento.m0_endent }}, {{ item_fornecedor.empresa_faturamento.m0_bairent }}<br>
+                    {{ item_fornecedor.empresa_faturamento.m0_cident }} - CEP {{ item_fornecedor.empresa_faturamento.m0_cepent }}<br>
+                    CNPJ: {{ item_fornecedor.empresa_faturamento.m0_cgc }} | IE: {{ item_fornecedor.empresa_faturamento.m0_insc }}<br>
+                    Telefone: {{ item_fornecedor.empresa_faturamento.m0_tel }}
+                </p>
+            </div>
+            {% endif %}
+
             {% for coleta in item_fornecedor.coletas %}
             <div class="coleta-bloco">
                 <div class="coleta-info">
@@ -141,8 +175,8 @@
                     <tbody>
                         {% for detalhe in coleta.detalhes.all %}
                         <tr>
-                             <td>{{ detalhe.item_erp.c7_produto }}</td>
-                            <td>{{ detalhe.item_erp.c7_descri }}</td>
+                             <td>{{ detalhe.item_erp_info.c7_produto }}</td>
+                            <td>{{ detalhe.item_erp_info.c7_descri }}</td>
                             <td class="numero">{{ detalhe.quantidade_disponivel|localize }}</td>
                         </tr>
                         {% empty %}

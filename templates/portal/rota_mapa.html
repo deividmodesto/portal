@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa da Rota {{ rota.id }} - {{ rota.motorista.nome }}</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: sans-serif; margin: 0; }
+        #map { height: 100vh; }
+        .leaflet-popup-content-wrapper { border-radius: 5px; }
+        .leaflet-popup-content h5 { margin: 0 0 5px; }
+        .leaflet-popup-content p { margin: 2px 0; }
+        .no-data-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            font-size: 1.2em;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Pega os dados que o Django agora vai inserir corretamente
+        const pontosGps = {{ pontos_gps_json|safe }};
+        const eventos = {{ eventos_json|safe }};
+        const mapContainer = document.getElementById('map');
+        
+        let initialCoords = [-14.235, -51.925]; // Padrão: centro do Brasil
+        let initialZoom = 4;
+
+        if (pontosGps && pontosGps.length > 0) {
+            initialCoords = [pontosGps[0].latitude, pontosGps[0].longitude];
+            initialZoom = 15;
+        }
+
+        const map = L.map('map').setView(initialCoords, initialZoom);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        if (pontosGps && pontosGps.length > 0) {
+            const latlngs = pontosGps.map(p => [p.latitude, p.longitude]);
+            const polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+            map.fitBounds(polyline.getBounds());
+
+            if (eventos && eventos.length > 0) {
+                eventos.forEach(evento => {
+                    if (!evento.latitude || !evento.longitude) return;
+
+                    const isInicio = evento.evento === 'INICIO_COLETA';
+                    const markerColor = isInicio ? 'green' : 'red';
+                    
+                    const icon = L.icon({
+                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${markerColor}.png`,
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                    });
+
+                    const marker = L.marker([evento.latitude, evento.longitude], {icon: icon}).addTo(map);
+
+                    marker.bindPopup(`
+                        <h5>${isInicio ? 'Início da Coleta' : 'Fim da Coleta'}</h5>
+                        <p><b>Fornecedor:</b> ${evento.fornecedor_nome || 'N/A'}</p>
+                        <p><b>Hora:</b> ${new Date(evento.timestamp).toLocaleTimeString('pt-BR')}</p>
+                    `);
+                });
+            }
+        } else {
+            const overlay = document.createElement('div');
+            overlay.className = 'no-data-overlay';
+            overlay.innerHTML = '<p>Nenhum ponto de GPS registado para esta rota ainda.</p>';
+            mapContainer.appendChild(overlay);
+        }
+    </script>
+
+</body>
+</html>

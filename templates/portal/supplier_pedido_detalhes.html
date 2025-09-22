@@ -10,144 +10,186 @@
             --cor-principal: #012E23;
             --cor-destaque: #05B540;
             --cor-alerta: #FFAA00;
-            --cor-aviso: #FF6600;
+            --cor-info: #007bff; /* Azul para o novo botão */
         }
         body { font-family: sans-serif; margin: 0; background-color: #f8f9fa; }
         header { background-color: var(--cor-principal); color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
         .header-logo { height: 40px; }
         .header-user a { color: var(--cor-alerta); text-decoration: none; font-weight: bold; }
-        main { padding: 2em; }
-        h2 { border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1em; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        main { padding: 2em; max-width: 1200px; margin: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5em; }
+        .btn, .btn-voltar { background-color: #6c757d; color: white; padding: 0.6em 1.2em; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; }
+        
+        .content-grid { display: grid; grid-template-columns: 1fr; gap: 2em; margin-top: 1em; } /* Reduzido o margin-top */
+        
+        .form-section, .history-section, .progresso-card { background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        h3, h4 { margin-top: 0; color: #343a40; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background-color: #e9ecef; }
-        .status-liberado { color: var(--cor-aviso); font-weight: bold; }
-        .status-pronto { color: var(--cor-destaque); font-weight: bold; }
-        .btn-pronto { background-color: var(--cor-destaque); color: white; padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.9em; }
-        .btn-pronto:hover { background-color: #048c32; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5em; margin-top: 1.5em; }
+        .form-item label { font-weight: bold; margin-bottom: 0.5em; display: block; }
+        .form-item input { width: 100%; padding: 0.7em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        
+        .btn-liberar { background-color: var(--cor-destaque); color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 1.1em; font-weight: bold; }
+        .btn-liberar:hover { background-color: #048c32; }
+        
+        .btn-disponibilizar-tudo { background-color: var(--cor-info); color: white; font-size: 0.9em; }
+
         .messages { padding: 0 2em; margin-top: 1em; }
         .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
         .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+
+        /* Estilos para o Card de Progresso */
+        .progresso-card { margin-top: 2em; }
+        .progress-bar-container { background-color: #e9ecef; border-radius: 20px; overflow: hidden; margin: 1em 0; }
+        .progress-bar { height: 25px; background-color: var(--cor-destaque); width: {{ progresso.percentual }}%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: width 0.5s ease-in-out; }
+        .progresso-info { display: flex; justify-content: space-between; font-size: 0.9em; color: #555; }
     </style>
 </head>
 <body>
     <header>
-        <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
-        <div class="header-user">
-            <span>Olá, {{ request.user.fornecedor.nome_fornecedor }}</span> | <a href="{% url 'portal:logout' %}">Sair</a>
-        </div>
-    </header>
-
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-            </div>
-        {% endfor %}
+    <img src="{% static 'img/logo_reunidas.png' %}" alt="Logo Reunidas" class="header-logo">
+    <div class="header-user">
+        <span>Olá, {{ request.user.fornecedor.nome_fornecedor }}</span> | 
+        
+        <form action="{% url 'portal:logout' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" style="background: none; border: none; color: var(--cor-alerta); cursor: pointer; text-decoration: none; font-weight: bold; padding: 0; font-family: sans-serif; font-size: 1em;">Sair</button>
+        </form>
     </div>
-    {% endif %}
+</header>
 
     <main>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="page-header">
             <h2>Pedido de Compra Nº {{ pedido.numero_pedido }}</h2>
             <a href="{% url 'portal:dashboard' %}" class="btn-voltar">Voltar ao Dashboard</a>
         </div>
         
-        <form method="post">
-            {% csrf_token %}
-            <h3>Itens a Disponibilizar</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Produto</th>
-                        <th>Descrição</th>
-                        <th style="text-align: right;">Qtd. Pedido</th>
-                        <th style="text-align: right;">Qtd. Já Disponível</th>
-                        <th style="text-align: right;">Qtd. Pendente</th>
-                        <th style="width: 15%;">Qtd. a Disponibilizar Agora</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in itens %}
-                    <tr>
-                        <td>{{ item.erp.c7_item }}</td>
-                        <td>{{ item.erp.c7_produto }}</td>
-                        <td>{{ item.erp.c7_descri }}</td>
-                        <td style="text-align: right;">{{ item.erp.c7_quant|localize }}</td>
-                        <td style="text-align: right;">{{ item.disponivel|localize }}</td>
-                        <td style="text-align: right; font-weight: bold;">{{ item.pendente|localize }}</td>
-                        <td>
-                            <input type="number" name="quantidade_item_{{ item.erp.recno }}" step="0.01" min="0" max="{{ item.pendente }}" value="0" style="width: 90%;">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <br>
-             <h3>Informações da Coleta</h3>
-            <div class="filtros-container">
-                <div class="filtro-item">
-                    <label for="data_disponibilidade">Data para Retirada *</label>
-                    <input type="date" name="data_disponibilidade" required>
-                </div>
-                <div class="filtro-item">
-                    <label for="volumes">Volumes (caixas, pallets)</label>
-                    <input type="number" name="volumes">
-                </div>
-                <div class="filtro-item">
-                    <label for="peso_kg">Peso Total (Kg)</label>
-                    <input type="number" name="peso_kg" step="0.01">
-                </div>
-                
-                <div class="filtro-item">
-                    <label for="numero_nota">Número da Nota Fiscal</label>
-                    <input type="text" name="numero_nota_fiscal" id="numero_nota">
-                </div>
-                <div class="filtro-item">
-                    <label for="chave_acesso">Chave de Acesso NF-e</label>
-                    <input type="text" name="chave_acesso_nfe" id="chave_acesso" maxlength="44" pattern="\d*">
-                </div>
-
+        <div class="progresso-card">
+            <h4>Progresso de Disponibilização</h4>
+            <div class="progress-bar-container">
+                <div class="progress-bar">{{ progresso.percentual }}%</div>
             </div>
-
-            <button type="submit" class="btn-liberar" style="font-size: 1.1em; padding: 1em;">Disponibilizar Itens Informados</button>
-        </form>
-
-        <br><br>
-        <h2>Histórico de Liberações para este Pedido</h2>
-        <table>
-             <thead>
-                <tr>
-                    <th>Data da Liberação</th>
-                    <th>Itens</th>
-                    <th>Volumes</th>
-                    <th>Peso (Kg)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for coleta in coletas_anteriores %}
-                <tr>
-                    <td>{{ coleta.data_disponibilidade|date:"d/m/Y" }}</td>
-                    <td>
-                        <ul>
-                        {% for detalhe in coleta.detalhes.all %}
-                            <li>{{ detalhe.quantidade_disponivel|localize }} de {{ detalhe.item_erp.c7_produto }} - {{ detalhe.item_erp.c7_descri }}</li>
+            <div class="progresso-info">
+                <span><strong>Total do Pedido:</strong> {{ progresso.total_pedido|localize }} itens</span>
+                <span><strong>Já Disponível para Coleta:</strong> {{ progresso.total_disponivel|localize }} itens</span>
+            </div>
+        </div>
+        
+        <div class="content-grid">
+            <form method="post" class="form-section">
+                {% csrf_token %}
+                <div class="section-header">
+                    <h3>1. Itens a Disponibilizar</h3>
+                    <a href="#" class="btn btn-disponibilizar-tudo" onclick="disponibilizarTudo(event)">Disponibilizar Tudo (100%)</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Descrição</th>
+                            <th style="text-align: right;">Qtd. Pendente</th>
+                            <th style="width: 20%;">Qtd. a Disponibilizar Agora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>{{ item.erp.c7_produto }}</td>
+                            <td>{{ item.erp.c7_descri }}</td>
+                            <td style="text-align: right; font-weight: bold;">{{ item.pendente|localize }}</td>
+                            <td>
+                                <input type="number" class="qtd-disponibilizar" name="quantidade_item_{{ item.erp.recno }}" step="0.01" min="0" max="{{ item.pendente }}" value="0" style="width: 100%; text-align: right;">
+                            </td>
+                        </tr>
                         {% endfor %}
-                        </ul>
-                    </td>
-                    <td>{{ coleta.volumes|default_if_none:"" }}</td>
-                    <td>{{ coleta.peso_kg|localize|default_if_none:"" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4">Nenhuma liberação registrada para este pedido ainda.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 2em;">2. Informações da Coleta</h3>
+                <div class="form-grid">
+                    <div class="form-item">
+                        <label for="data_disponibilidade">Data para Retirada *</label>
+                        <input type="date" name="data_disponibilidade" required>
+                    </div>
+                    <div class="form-item">
+                        <label for="volumes">Volumes (caixas, pallets)</label>
+                        <input type="number" name="volumes">
+                    </div>
+                    <div class="form-item">
+                        <label for="peso_kg">Peso Total (Kg)</label>
+                        <input type="number" name="peso_kg" step="0.01">
+                    </div>
+                    <div class="form-item">
+                        <label for="numero_nota">Número da Nota Fiscal</label>
+                        <input type="text" name="numero_nota_fiscal" id="numero_nota">
+                    </div>
+                    <div class="form-item">
+                        <label for="chave_acesso">Chave de Acesso NF-e</label>
+                        <input type="text" name="chave_acesso_nfe" id="chave_acesso" maxlength="44" pattern="\d*">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-liberar" style="font-size: 1.1em; padding: 1em; margin-top: 2em;">Disponibilizar Itens Informados</button>
+            </form>
+
+            <div class="history-section">
+                <h3>Histórico de Liberações para este Pedido</h3>
+                <table>
+                     <thead>
+                        <tr>
+                            <th>Data da Liberação</th>
+                            <th>Itens</th>
+                            <th>Volumes</th>
+                            <th>Peso (Kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for coleta in coletas_anteriores %}
+                        <tr>
+                            <td>{{ coleta.data_disponibilidade|date:"d/m/Y" }}</td>
+                            <td>
+                                <ul>
+                                {% for detalhe in coleta.detalhes.all %}
+                                    <li>{{ detalhe.quantidade_disponivel|localize }} de {{ detalhe.item_erp.c7_produto }}</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>{{ coleta.volumes|default_if_none:"" }}</td>
+                            <td>{{ coleta.peso_kg|localize|default_if_none:"" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center;">Nenhuma liberação registrada para este pedido.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
+
+    <script>
+        function disponibilizarTudo(event) {
+            event.preventDefault(); 
+            const camposQuantidade = document.querySelectorAll('.qtd-disponibilizar');
+            
+            camposQuantidade.forEach(campo => {
+                const valorMaximo = campo.max.replace(',', '.');
+                campo.value = valorMaximo;
+            });
+        }
+    </script>
 </body>
 </html>
